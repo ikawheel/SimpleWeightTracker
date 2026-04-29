@@ -1,8 +1,7 @@
 package com.example.simpleweighttracker.ui
 
 import com.example.simpleweighttracker.model.DailyWeightPoint
-import com.example.simpleweighttracker.model.GraphType
-import com.example.simpleweighttracker.model.PeriodWeightPoint
+import com.example.simpleweighttracker.model.GraphRange
 import com.example.simpleweighttracker.model.WeightRecord
 import java.time.LocalDate
 
@@ -21,9 +20,7 @@ data class RecordFormState(
 data class WeightUiState(
     val records: List<WeightRecord> = emptyList(),
     val latestClothesWeight: Double = 0.0,
-    val selectedGraphType: GraphType = GraphType.Daily,
+    val selectedGraphRange: GraphRange = GraphRange.All,
     val dailyChartData: List<DailyWeightPoint> = emptyList(),
-    val weeklyChartData: List<PeriodWeightPoint> = emptyList(),
-    val monthlyChartData: List<PeriodWeightPoint> = emptyList(),
     val formState: RecordFormState = RecordFormState()
 )

@@ -41,6 +41,8 @@ object WeightTrackerFormatters {
 
     fun formatValue(value: Double): String = weightFormatter.format(value)
 
+    fun formatIntegerValue(value: Int): String = value.toString()
+
     fun formatInput(value: Double): String = weightFormatter.format(value)
 
     fun formatFullDate(date: LocalDate): String = date.format(fullDateFormatter)

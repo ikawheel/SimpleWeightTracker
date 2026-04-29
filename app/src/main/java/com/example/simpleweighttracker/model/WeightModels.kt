@@ -28,3 +28,13 @@ enum class GraphType {
     Weekly,
     Monthly
 }
+
+enum class GraphRange(
+    val label: String
+) {
+    OneMonth(label = "1か月"),
+    ThreeMonths(label = "3か月"),
+    SixMonths(label = "6か月"),
+    OneYear(label = "1年"),
+    All(label = "全期間")
+}

@@ -2,17 +2,22 @@ package com.example.simpleweighttracker.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,16 +35,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,7 +64,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.simpleweighttracker.model.GraphRange
 import com.example.simpleweighttracker.model.WeightRecord
+import kotlin.math.ceil
+import kotlin.math.floor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +79,10 @@ fun WeightTrackerApp(
     var showEditorDialog by rememberSaveable { mutableStateOf(false) }
 
     MaterialTheme {
+        val navigationBackground = MaterialTheme.colorScheme.surfaceContainer
+        val navigationBottomInset =
+            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
         if (showEditorDialog) {
             RecordEditorDialog(
                 uiState = uiState,
@@ -91,38 +102,77 @@ fun WeightTrackerApp(
         }
 
         Scaffold(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding(),
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text("Net Weight Tracker")
-                            Text(
-                                text = selectedTab.title,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                )
-            },
+            modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                NavigationBar {
-                    AppTab.entries.forEach { tab ->
-                        NavigationBarItem(
-                            selected = selectedTab == tab,
-                            onClick = { selectedTab = tab },
-                            icon = {
-                                Text(
-                                    text = tab.shortLabel,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            },
-                            label = { Text(tab.title) }
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = navigationBackground,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(navigationBackground)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
                         )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp + navigationBottomInset)
+                                .background(navigationBackground)
+                                .padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            AppTab.entries.forEach { tab ->
+                                val selected = selectedTab == tab
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .background(navigationBackground)
+                                        .clickable { selectedTab = tab }
+                                        .padding(horizontal = 12.dp),
+                                    contentAlignment = Alignment.TopCenter
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(top = 12.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = tab.title,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (selected) {
+                                                MaterialTheme.colorScheme.onSurface
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .height(2.dp)
+                                                .width(36.dp)
+                                                .background(
+                                                    color = if (selected) {
+                                                        MaterialTheme.colorScheme.primary
+                                                    } else {
+                                                        androidx.compose.ui.graphics.Color.Transparent
+                                                    },
+                                                    shape = RoundedCornerShape(999.dp)
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -146,7 +196,8 @@ fun WeightTrackerApp(
 
                 AppTab.Chart -> ChartScreen(
                     uiState = uiState,
-                    contentPadding = innerPadding
+                    contentPadding = innerPadding,
+                    onGraphRangeSelected = viewModel::selectGraphRange
                 )
             }
         }
@@ -154,11 +205,10 @@ fun WeightTrackerApp(
 }
 
 private enum class AppTab(
-    val title: String,
-    val shortLabel: String
+    val title: String
 ) {
-    List(title = "一覧", shortLabel = "覧"),
-    Chart(title = "グラフ", shortLabel = "図")
+    List(title = "一覧"),
+    Chart(title = "グラフ")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -443,124 +493,145 @@ private fun RecordsScreen(
         )
     }
 
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(contentPadding),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(contentPadding)
     ) {
-        item {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "体重の記入",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "このボタンから記録を追加します。編集も一覧の各行から開けます。",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 220.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (records.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Button(
-                            onClick = onAdd,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("体重を記入")
-                        }
-                        OutlinedButton(
-                            onClick = onInsertDebugData,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Text("デバッグ投入")
-                        }
-                    }
-                    OutlinedButton(
-                        onClick = { showDeleteAllDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text("データ全削除")
+                        Text(
+                            text = "記録がありません",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
                     }
                 }
-            }
-        }
-
-        if (records.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 48.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "記録がありません",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        } else {
-            items(records, key = WeightRecord::id) { record ->
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+            } else {
+                items(records, key = WeightRecord::id) { record ->
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                        Column(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
                                     text = WeightTrackerFormatters.formatFullDate(record.date),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
+                                    text = WeightTrackerFormatters.formatWeight(record.measuredWeight),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
                                     text = "登録時刻 ${WeightTrackerFormatters.formatTime(record.createdAt)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TextButton(
+                                        onClick = { onEdit(record) },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                    ) {
+                                        Text("編集")
+                                    }
+                                    TextButton(
+                                        onClick = { pendingDelete = record },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                    ) {
+                                        Text("削除")
+                                    }
+                                }
                             }
-                            Text(
-                                text = WeightTrackerFormatters.formatWeight(record.measuredWeight),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
                         }
+                    }
+                }
+            }
+        }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(onClick = { onEdit(record) }) {
-                                Text("編集")
-                            }
-                            TextButton(onClick = { pendingDelete = record }) {
-                                Text("削除")
-                            }
-                        }
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.background,
+            tonalElevation = 0.dp,
+            shadowElevation = 12.dp,
+            shape = RoundedCornerShape(0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = onAdd,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text("体重を記入")
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = onInsertDebugData,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text("デバッグ投入")
+                    }
+                    Button(
+                        onClick = { showDeleteAllDialog = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    ) {
+                        Text("データ全削除")
                     }
                 }
             }
@@ -568,10 +639,12 @@ private fun RecordsScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChartScreen(
     uiState: WeightUiState,
-    contentPadding: PaddingValues
+    contentPadding: PaddingValues,
+    onGraphRangeSelected: (GraphRange) -> Unit
 ) {
     val dailyPoints = uiState.dailyChartData.map { point ->
         ChartPoint(
@@ -588,6 +661,19 @@ private fun ChartScreen(
             .padding(horizontal = 16.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            GraphRange.entries.forEach { graphRange ->
+                FilterChip(
+                    selected = uiState.selectedGraphRange == graphRange,
+                    onClick = { onGraphRangeSelected(graphRange) },
+                    label = { Text(graphRange.label) }
+                )
+            }
+        }
+
         WeightChart(
             title = "日ごとの最低記録体重",
             subtitle = "7日移動平均を重ねて表示します。",
@@ -639,9 +725,19 @@ private fun WeightChart(
             }
             val rawMin = allValues.minOrNull() ?: 0.0
             val rawMax = allValues.maxOrNull() ?: rawMin
-            val padding = if (rawMax - rawMin < 1.0) 0.5 else (rawMax - rawMin) * 0.12
-            val chartMin = WeightTrackerFormatters.roundToTwoDecimals((rawMin - padding).coerceAtLeast(0.0))
-            val chartMax = WeightTrackerFormatters.roundToTwoDecimals(rawMax + padding)
+            val initialChartMin = floor(rawMin).toInt().coerceAtLeast(0)
+            val initialChartMax = ceil(rawMax).toInt().coerceAtLeast(initialChartMin)
+            val chartMin = if (initialChartMin == initialChartMax) {
+                (initialChartMin - 1).coerceAtLeast(0)
+            } else {
+                initialChartMin
+            }
+            val chartMax = if (initialChartMin == initialChartMax) {
+                initialChartMax + 1
+            } else {
+                initialChartMax
+            }
+            val chartTicks = (chartMin..chartMax).toList().asReversed()
 
             Row(
                 modifier = Modifier
@@ -655,16 +751,13 @@ private fun WeightChart(
                         .fillMaxHeight(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = WeightTrackerFormatters.formatValue(chartMax),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = WeightTrackerFormatters.formatValue(chartMin),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    chartTicks.forEach { tick ->
+                        Text(
+                            text = WeightTrackerFormatters.formatIntegerValue(tick),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 WeightChartCanvas(
@@ -672,8 +765,9 @@ private fun WeightChart(
                         .fillMaxHeight()
                         .weight(1f),
                     points = points,
-                    chartMin = chartMin,
-                    chartMax = chartMax
+                    chartMin = chartMin.toDouble(),
+                    chartMax = chartMax.toDouble(),
+                    chartTicks = chartTicks
                 )
             }
 
@@ -703,7 +797,8 @@ private fun WeightChartCanvas(
     modifier: Modifier,
     points: List<ChartPoint>,
     chartMin: Double,
-    chartMax: Double
+    chartMax: Double,
+    chartTicks: List<Int>
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.tertiary
@@ -712,7 +807,6 @@ private fun WeightChartCanvas(
 
     Canvas(modifier = modifier) {
         val strokeWidth = with(density) { 3.dp.toPx() }
-        val pointRadius = with(density) { 4.dp.toPx() }
         val gridStroke = with(density) { 1.dp.toPx() }
         val topPadding = with(density) { 8.dp.toPx() }
         val bottomPadding = with(density) { 10.dp.toPx() }
@@ -738,8 +832,8 @@ private fun WeightChartCanvas(
             return bottom - (ratio * height)
         }
 
-        repeat(4) { step ->
-            val y = top + height * (step / 3f)
+        chartTicks.forEach { tick ->
+            val y = yPosition(tick.toDouble())
             drawLine(
                 color = outlineColor.copy(alpha = 0.7f),
                 start = Offset(left, y),
@@ -766,14 +860,6 @@ private fun WeightChartCanvas(
         }
 
         drawSeries(primaryOffsets, color = primaryColor, strokeWidth = strokeWidth)
-
-        primaryOffsets.forEach { offset ->
-            drawCircle(
-                color = primaryColor,
-                radius = pointRadius,
-                center = offset
-            )
-        }
 
         val secondarySegments = mutableListOf<List<Offset>>()
         var currentSegment = mutableListOf<Offset>()

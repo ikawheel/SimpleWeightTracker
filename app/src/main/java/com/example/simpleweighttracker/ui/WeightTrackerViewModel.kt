@@ -6,7 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.simpleweighttracker.data.WeightRecordRepository
 import com.example.simpleweighttracker.data.WeightTrackerDatabase
-import com.example.simpleweighttracker.model.GraphType
+import com.example.simpleweighttracker.model.DailyWeightPoint
+import com.example.simpleweighttracker.model.GraphRange
 import com.example.simpleweighttracker.model.WeightRecord
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,21 +26,20 @@ class WeightTrackerViewModel(
     private val repository: WeightRecordRepository
 ) : ViewModel() {
     private val records = MutableStateFlow<List<WeightRecord>>(emptyList())
-    private val selectedGraphType = MutableStateFlow(GraphType.Daily)
+    private val selectedGraphRange = MutableStateFlow(GraphRange.All)
     private val formState = MutableStateFlow(RecordFormState())
 
     val uiState: StateFlow<WeightUiState> = combine(
         records,
-        selectedGraphType,
+        selectedGraphRange,
         formState
-    ) { currentRecords, graphType, currentForm ->
+    ) { currentRecords, graphRange, currentForm ->
+        val allDailyChartData = WeightChartAggregator.buildDaily(currentRecords)
         WeightUiState(
             records = currentRecords,
             latestClothesWeight = currentRecords.firstOrNull()?.clothesWeight ?: 0.0,
-            selectedGraphType = graphType,
-            dailyChartData = WeightChartAggregator.buildDaily(currentRecords),
-            weeklyChartData = WeightChartAggregator.buildWeekly(currentRecords),
-            monthlyChartData = WeightChartAggregator.buildMonthly(currentRecords),
+            selectedGraphRange = graphRange,
+            dailyChartData = filterDailyChartData(allDailyChartData, graphRange),
             formState = currentForm
         )
     }.stateIn(
@@ -106,8 +106,8 @@ class WeightTrackerViewModel(
         }
     }
 
-    fun selectGraphType(graphType: GraphType) {
-        selectedGraphType.value = graphType
+    fun selectGraphRange(graphRange: GraphRange) {
+        selectedGraphRange.value = graphRange
     }
 
     fun startEditing(record: WeightRecord) {
@@ -229,6 +229,26 @@ class WeightTrackerViewModel(
         viewModelScope.launch {
             repository.deleteAll()
             resetForm(defaultClothesWeight = 0.0)
+        }
+    }
+
+    private fun filterDailyChartData(
+        points: List<DailyWeightPoint>,
+        graphRange: GraphRange
+    ): List<DailyWeightPoint> {
+        val latestDate = points.lastOrNull()?.date ?: return emptyList()
+        val startDate = when (graphRange) {
+            GraphRange.OneMonth -> latestDate.minusMonths(1)
+            GraphRange.ThreeMonths -> latestDate.minusMonths(3)
+            GraphRange.SixMonths -> latestDate.minusMonths(6)
+            GraphRange.OneYear -> latestDate.minusYears(1)
+            GraphRange.All -> null
+        }
+
+        return if (startDate == null) {
+            points
+        } else {
+            points.filter { point -> !point.date.isBefore(startDate) }
         }
     }
 
