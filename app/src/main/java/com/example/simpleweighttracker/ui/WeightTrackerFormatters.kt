@@ -44,6 +44,8 @@ object WeightTrackerFormatters {
 
     fun formatIntegerValue(value: Int): String = value.toString()
 
+    fun formatAxisValue(value: Double): String = weightFormatter.format(value)
+
     fun formatInput(value: Double): String = weightFormatter.format(value)
 
     fun formatMonthlyTrend(value: Double): String = "${signedWeightFormatter.format(value)} kg/月"

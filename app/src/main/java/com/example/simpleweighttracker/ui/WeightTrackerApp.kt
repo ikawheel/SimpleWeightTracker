@@ -2,13 +2,12 @@ package com.example.simpleweighttracker.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -37,7 +36,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -57,7 +55,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -69,8 +69,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.simpleweighttracker.model.GraphRange
 import com.example.simpleweighttracker.model.WeightRecord
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
 import kotlin.math.floor
+
+private val MovingAverageColor = Color(0xFFFFA726)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -624,19 +628,24 @@ private fun RecordsScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChartScreen(
     uiState: WeightUiState,
     contentPadding: PaddingValues,
     onGraphRangeSelected: (GraphRange) -> Unit
 ) {
+    val chartDateRange = remember(uiState.records, uiState.selectedGraphRange) {
+        buildChartDateRange(
+            records = uiState.records,
+            graphRange = uiState.selectedGraphRange
+        )
+    }
     val trendPerMonth = remember(uiState.dailyChartData) {
         calculateMonthlyTrendPerMonth(uiState.dailyChartData)
     }
     val dailyPoints = uiState.dailyChartData.map { point ->
         ChartPoint(
-            label = WeightTrackerFormatters.formatShortDate(point.date),
+            date = point.date,
             value = point.netWeight,
             secondaryValue = point.movingAverage
         )
@@ -646,145 +655,206 @@ private fun ChartScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding)
-            .padding(horizontal = 16.dp, vertical = 20.dp),
+            .padding(vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        WeightChart(
+            modifier = Modifier.weight(1f),
+            points = dailyPoints,
+            dateRange = chartDateRange,
+            trendLabel = trendPerMonth?.let { monthlyTrend ->
+                "体重増減の傾向 ${WeightTrackerFormatters.formatMonthlyTrend(monthlyTrend)}"
+            }
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             GraphRange.entries.forEach { graphRange ->
-                FilterChip(
+                GraphRangeButton(
+                    graphRange = graphRange,
                     selected = uiState.selectedGraphRange == graphRange,
                     onClick = { onGraphRangeSelected(graphRange) },
-                    label = { Text(graphRange.label) }
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
+    }
+}
 
-        WeightChart(
-            title = "日ごとの最低記録体重",
-            subtitle = "7日移動平均を重ねて表示します。",
-            points = dailyPoints,
-            trendLabel = trendPerMonth?.let { monthlyTrend ->
-                "線形回帰 ${WeightTrackerFormatters.formatMonthlyTrend(monthlyTrend)}"
-            }
+@Composable
+private fun GraphRangeButton(
+    graphRange: GraphRange,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(999.dp)
+    val backgroundColor = if (selected) {
+        MaterialTheme.colorScheme.secondaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Box(
+        modifier = modifier
+            .height(36.dp)
+            .background(backgroundColor, shape)
+            .border(width = 1.dp, color = borderColor, shape = shape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = graphRange.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = contentColor,
+            textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
 private fun WeightChart(
-    title: String,
-    subtitle: String,
+    modifier: Modifier = Modifier,
     points: List<ChartPoint>,
+    dateRange: ChartDateRange,
     trendLabel: String?
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(end = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            if (points.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(260.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("記録がありません")
-                }
-                return@Column
-            }
-
-            val allValues = buildList {
-                addAll(points.map(ChartPoint::value))
-                addAll(points.mapNotNull(ChartPoint::secondaryValue))
-            }
-            val rawMin = allValues.minOrNull() ?: 0.0
-            val rawMax = allValues.maxOrNull() ?: rawMin
-            val initialChartMin = floor(rawMin).toInt().coerceAtLeast(0)
-            val initialChartMax = ceil(rawMax).toInt().coerceAtLeast(initialChartMin)
-            val chartMin = if (initialChartMin == initialChartMax) {
-                (initialChartMin - 1).coerceAtLeast(0)
-            } else {
-                initialChartMin
-            }
-            val chartMax = if (initialChartMin == initialChartMax) {
-                initialChartMax + 1
-            } else {
-                initialChartMax
-            }
-            val chartTicks = (chartMin..chartMax).toList().asReversed()
-
-            Row(
+        if (points.isEmpty()) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(260.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier
-                        .width(52.dp)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    chartTicks.forEach { tick ->
-                        Text(
-                            text = WeightTrackerFormatters.formatIntegerValue(tick),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Text("記録がありません")
+            }
+            ChartXAxis(
+                dateRange = dateRange,
+                modifier = Modifier.padding(start = 44.dp)
+            )
+            return@Column
+        }
 
-                WeightChartCanvas(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight(1f),
-                    points = points,
-                    chartMin = chartMin.toDouble(),
-                    chartMax = chartMax.toDouble(),
-                    chartTicks = chartTicks
-                )
+        val allValues = buildList {
+            addAll(points.map(ChartPoint::value))
+            addAll(points.mapNotNull(ChartPoint::secondaryValue))
+        }
+        val rawMin = allValues.minOrNull() ?: 0.0
+        val rawMax = allValues.maxOrNull() ?: rawMin
+        val initialChartMinHalf = floor(rawMin * 2.0).toInt().coerceAtLeast(0)
+        val initialChartMaxHalf = ceil(rawMax * 2.0).toInt().coerceAtLeast(initialChartMinHalf)
+        val chartMinHalf = if (initialChartMinHalf == initialChartMaxHalf) {
+            (initialChartMinHalf - 1).coerceAtLeast(0)
+        } else {
+            initialChartMinHalf
+        }
+        val chartMaxHalf = if (initialChartMinHalf == initialChartMaxHalf) {
+            initialChartMaxHalf + 1
+        } else {
+            initialChartMaxHalf
+        }
+        val chartMin = chartMinHalf / 2.0
+        val chartMax = chartMaxHalf / 2.0
+        val chartTicks = (chartMinHalf..chartMaxHalf)
+            .map { halfStep -> halfStep / 2.0 }
+            .asReversed()
+        val dottedChartTicks = buildDottedQuarterTicks(
+            chartMin = chartMin,
+            chartMax = chartMax
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .width(36.dp)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                chartTicks.forEach { tick ->
+                    Text(
+                        text = WeightTrackerFormatters.formatAxisValue(tick),
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.End
+                    )
+                }
             }
 
-            ChartXAxis(points = points)
+            Box(
+                modifier = Modifier
+                    .width(8.dp)
+                    .fillMaxHeight()
+            )
 
-            if (points.any { it.secondaryValue != null }) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            WeightChartCanvas(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1f),
+                points = points,
+                chartMin = chartMin.toDouble(),
+                chartMax = chartMax.toDouble(),
+                dateRange = dateRange,
+                chartTicks = chartTicks,
+                dottedChartTicks = dottedChartTicks
+            )
+        }
+
+        ChartXAxis(
+            dateRange = dateRange,
+            modifier = Modifier.padding(start = 44.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (points.any { it.secondaryValue != null }) {
                     LegendItem(
                         color = MaterialTheme.colorScheme.primary,
                         label = "記録体重"
                     )
-                    LegendItem(
-                        color = MaterialTheme.colorScheme.tertiary,
-                        label = "7日移動平均"
-                    )
+                LegendItem(
+                    color = MovingAverageColor,
+                    label = "7日移動平均"
+                )
                 }
             }
 
             if (trendLabel != null) {
                 Text(
                     text = trendLabel,
-                    modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.End
@@ -800,10 +870,12 @@ private fun WeightChartCanvas(
     points: List<ChartPoint>,
     chartMin: Double,
     chartMax: Double,
-    chartTicks: List<Int>
+    dateRange: ChartDateRange,
+    chartTicks: List<Double>,
+    dottedChartTicks: List<Double>
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.tertiary
+    val secondaryColor = MovingAverageColor
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
     val density = LocalDensity.current
 
@@ -811,6 +883,14 @@ private fun WeightChartCanvas(
         val primaryStrokeWidth = with(density) { 2.dp.toPx() }
         val secondaryStrokeWidth = with(density) { 2.4.dp.toPx() }
         val gridStroke = with(density) { 1.dp.toPx() }
+        val integerGridStroke = with(density) { 2.dp.toPx() }
+        val dottedGridEffect = PathEffect.dashPathEffect(
+            intervals = floatArrayOf(
+                with(density) { 3.dp.toPx() },
+                with(density) { 4.dp.toPx() }
+            ),
+            phase = 0f
+        )
         val topPadding = with(density) { 8.dp.toPx() }
         val bottomPadding = with(density) { 10.dp.toPx() }
 
@@ -822,12 +902,15 @@ private fun WeightChartCanvas(
         val height = bottom - top
         val span = (chartMax - chartMin).coerceAtLeast(0.1)
 
-        fun xPosition(index: Int): Float {
-            return if (points.size == 1) {
-                left + width / 2f
-            } else {
-                left + width * (index / points.lastIndex.toFloat())
-            }
+        val dateSpanDays = ChronoUnit.DAYS
+            .between(dateRange.start, dateRange.end)
+            .coerceAtLeast(1L)
+
+        fun xPosition(date: LocalDate): Float {
+            val elapsedDays = ChronoUnit.DAYS
+                .between(dateRange.start, date)
+                .coerceIn(0L, dateSpanDays)
+            return left + width * (elapsedDays.toFloat() / dateSpanDays.toFloat())
         }
 
         fun yPosition(value: Double): Float {
@@ -835,13 +918,29 @@ private fun WeightChartCanvas(
             return bottom - (ratio * height)
         }
 
+        dottedChartTicks.forEach { tick ->
+            val y = yPosition(tick)
+            drawLine(
+                color = outlineColor.copy(alpha = 0.45f),
+                start = Offset(left, y),
+                end = Offset(right, y),
+                strokeWidth = gridStroke,
+                pathEffect = dottedGridEffect
+            )
+        }
+
         chartTicks.forEach { tick ->
-            val y = yPosition(tick.toDouble())
+            val y = yPosition(tick)
+            val stroke = if (tick % 1.0 == 0.0) {
+                integerGridStroke
+            } else {
+                gridStroke
+            }
             drawLine(
                 color = outlineColor.copy(alpha = 0.7f),
                 start = Offset(left, y),
                 end = Offset(right, y),
-                strokeWidth = gridStroke
+                strokeWidth = stroke
             )
         }
 
@@ -858,8 +957,8 @@ private fun WeightChartCanvas(
             strokeWidth = gridStroke
         )
 
-        val primaryOffsets = points.mapIndexed { index, point ->
-            Offset(xPosition(index), yPosition(point.value))
+        val primaryOffsets = points.map { point ->
+            Offset(xPosition(point.date), yPosition(point.value))
         }
 
         drawSeries(primaryOffsets, color = primaryColor, strokeWidth = primaryStrokeWidth)
@@ -867,7 +966,7 @@ private fun WeightChartCanvas(
         val secondarySegments = mutableListOf<List<Offset>>()
         var currentSegment = mutableListOf<Offset>()
 
-        points.forEachIndexed { index, point ->
+        points.forEach { point ->
             val secondaryValue = point.secondaryValue
             if (secondaryValue == null) {
                 if (currentSegment.isNotEmpty()) {
@@ -875,7 +974,7 @@ private fun WeightChartCanvas(
                 }
                 currentSegment = mutableListOf()
             } else {
-                currentSegment.add(Offset(xPosition(index), yPosition(secondaryValue)))
+                currentSegment.add(Offset(xPosition(point.date), yPosition(secondaryValue)))
             }
         }
 
@@ -891,6 +990,17 @@ private fun WeightChartCanvas(
             )
         }
     }
+}
+
+private fun buildDottedQuarterTicks(
+    chartMin: Double,
+    chartMax: Double
+): List<Double> {
+    val minQuarter = ceil(chartMin * 4.0).toInt()
+    val maxQuarter = floor(chartMax * 4.0).toInt()
+    return (minQuarter..maxQuarter)
+        .filter { quarterStep -> quarterStep % 2 != 0 }
+        .map { quarterStep -> quarterStep / 4.0 }
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSeries(
@@ -930,22 +1040,32 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSeries(
 }
 
 @Composable
-private fun ChartXAxis(points: List<ChartPoint>) {
-    val labels = remember(points) {
-        when (points.size) {
-            0 -> emptyList()
-            1 -> listOf(points.first().label)
-            2 -> listOf(points.first().label, points.last().label)
+private fun ChartXAxis(
+    dateRange: ChartDateRange,
+    modifier: Modifier = Modifier
+) {
+    val labels = remember(dateRange) {
+        val dateSpanDays = ChronoUnit.DAYS
+            .between(dateRange.start, dateRange.end)
+            .coerceAtLeast(0L)
+        when (dateSpanDays) {
+            0L -> listOf(WeightTrackerFormatters.formatShortDate(dateRange.start))
+            1L -> listOf(
+                WeightTrackerFormatters.formatShortDate(dateRange.start),
+                WeightTrackerFormatters.formatShortDate(dateRange.end)
+            )
             else -> listOf(
-                points.first().label,
-                points[points.lastIndex / 2].label,
-                points.last().label
+                WeightTrackerFormatters.formatShortDate(dateRange.start),
+                WeightTrackerFormatters.formatShortDate(dateRange.start.plusDays(dateSpanDays / 2L)),
+                WeightTrackerFormatters.formatShortDate(dateRange.end)
             )
         }
     }
 
     when (labels.size) {
-        1 -> Box(modifier = Modifier.fillMaxWidth()) {
+        1 -> Box(
+            modifier = modifier.fillMaxWidth()
+        ) {
             Text(
                 text = labels.first(),
                 modifier = Modifier.align(Alignment.Center),
@@ -955,7 +1075,7 @@ private fun ChartXAxis(points: List<ChartPoint>) {
         }
 
         2 -> Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             labels.forEach { label ->
@@ -968,7 +1088,7 @@ private fun ChartXAxis(points: List<ChartPoint>) {
         }
 
         else -> Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
@@ -1014,10 +1134,31 @@ private fun LegendItem(
 }
 
 private data class ChartPoint(
-    val label: String,
+    val date: LocalDate,
     val value: Double,
     val secondaryValue: Double? = null
 )
+
+private data class ChartDateRange(
+    val start: LocalDate,
+    val end: LocalDate
+)
+
+private fun buildChartDateRange(
+    records: List<WeightRecord>,
+    graphRange: GraphRange
+): ChartDateRange {
+    val fallbackEnd = LocalDate.now()
+    val end = records.maxByOrNull { record -> record.date.toEpochDay() }?.date ?: fallbackEnd
+    val start = when (graphRange) {
+        GraphRange.OneMonth -> end.minusMonths(1)
+        GraphRange.ThreeMonths -> end.minusMonths(3)
+        GraphRange.SixMonths -> end.minusMonths(6)
+        GraphRange.OneYear -> end.minusYears(1)
+        GraphRange.All -> records.minByOrNull { record -> record.date.toEpochDay() }?.date ?: end
+    }
+    return ChartDateRange(start = start, end = end)
+}
 
 private fun calculateMonthlyTrendPerMonth(
     points: List<com.example.simpleweighttracker.model.DailyWeightPoint>
