@@ -11,6 +11,7 @@ import com.example.simpleweighttracker.data.WeightTrackerDatabase
 import com.example.simpleweighttracker.model.DailyWeightPoint
 import com.example.simpleweighttracker.model.GraphRange
 import com.example.simpleweighttracker.model.WeightRecord
+import com.example.simpleweighttracker.ui.chart.WeightChartAggregator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

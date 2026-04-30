@@ -1,8 +1,9 @@
-package com.example.simpleweighttracker.ui
+package com.example.simpleweighttracker.ui.chart
 
 import com.example.simpleweighttracker.model.DailyWeightPoint
 import com.example.simpleweighttracker.model.PeriodWeightPoint
 import com.example.simpleweighttracker.model.WeightRecord
+import com.example.simpleweighttracker.ui.WeightTrackerFormatters
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
