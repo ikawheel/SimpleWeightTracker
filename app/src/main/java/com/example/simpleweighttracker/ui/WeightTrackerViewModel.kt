@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.simpleweighttracker.data.ChartColorSettingsRepository
 import com.example.simpleweighttracker.data.WeightRecordRepository
 import com.example.simpleweighttracker.data.WeightTrackerDatabase
 import com.example.simpleweighttracker.model.DailyWeightPoint
@@ -123,23 +124,30 @@ private val debugRecordSeeds = listOf(
 )
 
 class WeightTrackerViewModel(
-    private val repository: WeightRecordRepository
+    private val repository: WeightRecordRepository,
+    private val chartColorSettingsRepository: ChartColorSettingsRepository
 ) : ViewModel() {
     private val records = MutableStateFlow<List<WeightRecord>>(emptyList())
     private val selectedGraphRange = MutableStateFlow(GraphRange.All)
     private val formState = MutableStateFlow(RecordFormState())
+    private val chartColorSettings = MutableStateFlow(chartColorSettingsRepository.load())
 
     val uiState: StateFlow<WeightUiState> = combine(
         records,
         selectedGraphRange,
-        formState
-    ) { currentRecords, graphRange, currentForm ->
-        val allDailyChartData = WeightChartAggregator.buildDaily(currentRecords)
+        formState,
+        chartColorSettings
+    ) { currentRecords, graphRange, currentForm, currentChartColorSettings ->
+        val allDailyChartData = WeightChartAggregator.buildDaily(
+            records = currentRecords,
+            movingAverageDays = currentChartColorSettings.movingAverageDays
+        )
         WeightUiState(
             records = currentRecords,
             latestClothesWeight = currentRecords.firstOrNull()?.clothesWeight ?: 0.0,
             selectedGraphRange = graphRange,
             dailyChartData = filterDailyChartData(allDailyChartData, graphRange),
+            chartColorSettings = currentChartColorSettings,
             formState = currentForm
         )
     }.stateIn(
@@ -286,6 +294,28 @@ class WeightTrackerViewModel(
 
     fun selectGraphRange(graphRange: GraphRange) {
         selectedGraphRange.value = graphRange
+    }
+
+    fun updateRecordLineColor(colorArgb: Int?) {
+        chartColorSettingsRepository.saveRecordLineColor(colorArgb)
+        chartColorSettings.update { current ->
+            current.copy(recordLineColorArgb = colorArgb)
+        }
+    }
+
+    fun updateMovingAverageLineColor(colorArgb: Int) {
+        chartColorSettingsRepository.saveMovingAverageLineColor(colorArgb)
+        chartColorSettings.update { current ->
+            current.copy(movingAverageLineColorArgb = colorArgb)
+        }
+    }
+
+    fun updateMovingAverageDays(days: Int) {
+        val normalizedDays = days.coerceAtLeast(1)
+        chartColorSettingsRepository.saveMovingAverageDays(normalizedDays)
+        chartColorSettings.update { current ->
+            current.copy(movingAverageDays = normalizedDays)
+        }
     }
 
     fun startEditing(record: WeightRecord) {
@@ -537,11 +567,15 @@ class WeightTrackerViewModel(
         private val repository = WeightRecordRepository(
             WeightTrackerDatabase.getInstance(application).weightRecordDao()
         )
+        private val chartColorSettingsRepository = ChartColorSettingsRepository(application)
 
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(WeightTrackerViewModel::class.java)) {
-                return WeightTrackerViewModel(repository) as T
+                return WeightTrackerViewModel(
+                    repository = repository,
+                    chartColorSettingsRepository = chartColorSettingsRepository
+                ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }

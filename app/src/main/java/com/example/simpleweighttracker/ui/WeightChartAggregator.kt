@@ -9,7 +9,11 @@ import java.time.YearMonth
 import java.time.temporal.TemporalAdjusters
 
 object WeightChartAggregator {
-    fun buildDaily(records: List<WeightRecord>): List<DailyWeightPoint> {
+    fun buildDaily(
+        records: List<WeightRecord>,
+        movingAverageDays: Int
+    ): List<DailyWeightPoint> {
+        val movingAverageWindow = movingAverageDays.coerceAtLeast(1)
         val dailyMinimums = records
             .groupBy(WeightRecord::date)
             .map { (date, items) ->
@@ -22,8 +26,8 @@ object WeightChartAggregator {
             .sortedBy(DailyWeightPoint::date)
 
         return dailyMinimums.mapIndexed { index, point ->
-            val movingAverage = if (index >= 6) {
-                val slice = dailyMinimums.subList(index - 6, index + 1)
+            val movingAverage = if (index >= movingAverageWindow - 1) {
+                val slice = dailyMinimums.subList(index - movingAverageWindow + 1, index + 1)
                 slice.map(DailyWeightPoint::netWeight).average()
             } else {
                 null

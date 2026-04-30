@@ -53,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -74,7 +75,28 @@ import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
 import kotlin.math.floor
 
-private val MovingAverageColor = Color(0xFFFFA726)
+private val DefaultRecordLineColorArgb = 0xFF1976D2.toInt()
+
+private val ChartLineColorPalette = listOf(
+    ColorOption(label = "薄い青", colorArgb = 0xFF64B5F6.toInt()),
+    ColorOption(label = "薄い緑", colorArgb = 0xFF81C784.toInt()),
+    ColorOption(label = "薄い黄", colorArgb = 0xFFFFD54F.toInt()),
+    ColorOption(label = "薄い橙", colorArgb = 0xFFFFB74D.toInt()),
+    ColorOption(label = "薄い赤", colorArgb = 0xFFE57373.toInt()),
+    ColorOption(label = "薄い紫", colorArgb = 0xFFBA68C8.toInt()),
+    ColorOption(label = "青", colorArgb = DefaultRecordLineColorArgb),
+    ColorOption(label = "緑", colorArgb = 0xFF2E7D32.toInt()),
+    ColorOption(label = "黄", colorArgb = 0xFFFBC02D.toInt()),
+    ColorOption(label = "橙", colorArgb = 0xFFFFA726.toInt()),
+    ColorOption(label = "赤", colorArgb = 0xFFC62828.toInt()),
+    ColorOption(label = "紫", colorArgb = 0xFF7B1FA2.toInt()),
+    ColorOption(label = "濃い青", colorArgb = 0xFF0D47A1.toInt()),
+    ColorOption(label = "濃い緑", colorArgb = 0xFF1B5E20.toInt()),
+    ColorOption(label = "濃い黄", colorArgb = 0xFFF57F17.toInt()),
+    ColorOption(label = "濃い橙", colorArgb = 0xFFE65100.toInt()),
+    ColorOption(label = "濃い赤", colorArgb = 0xFF8E0000.toInt()),
+    ColorOption(label = "濃い紫", colorArgb = 0xFF4A148C.toInt())
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -214,6 +236,14 @@ fun WeightTrackerApp(
                         contentPadding = innerPadding,
                         onGraphRangeSelected = viewModel::selectGraphRange
                     )
+
+                    AppTab.Settings -> SettingsScreen(
+                        uiState = uiState,
+                        contentPadding = innerPadding,
+                        onRecordLineColorSelected = viewModel::updateRecordLineColor,
+                        onMovingAverageLineColorSelected = viewModel::updateMovingAverageLineColor,
+                        onMovingAverageDaysChanged = viewModel::updateMovingAverageDays
+                    )
                 }
             }
 
@@ -232,7 +262,14 @@ private enum class AppTab(
     val title: String
 ) {
     List(title = "一覧"),
-    Chart(title = "グラフ")
+    Chart(title = "グラフ"),
+    Settings(title = "設定")
+}
+
+private enum class SettingsPage {
+    Menu,
+    Color,
+    MovingAverage
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -634,6 +671,10 @@ private fun ChartScreen(
     contentPadding: PaddingValues,
     onGraphRangeSelected: (GraphRange) -> Unit
 ) {
+    val recordLineColor = Color(
+        uiState.chartColorSettings.recordLineColorArgb ?: DefaultRecordLineColorArgb
+    )
+    val movingAverageLineColor = Color(uiState.chartColorSettings.movingAverageLineColorArgb)
     val chartDateRange = remember(uiState.records, uiState.selectedGraphRange) {
         buildChartDateRange(
             records = uiState.records,
@@ -662,6 +703,9 @@ private fun ChartScreen(
             modifier = Modifier.weight(1f),
             points = dailyPoints,
             dateRange = chartDateRange,
+            recordLineColor = recordLineColor,
+            movingAverageLineColor = movingAverageLineColor,
+            movingAverageDays = uiState.chartColorSettings.movingAverageDays,
             trendLabel = trendPerMonth?.let { monthlyTrend ->
                 "体重増減の傾向 ${WeightTrackerFormatters.formatMonthlyTrend(monthlyTrend)}"
             }
@@ -727,10 +771,331 @@ private fun GraphRangeButton(
 }
 
 @Composable
+private fun SettingsScreen(
+    uiState: WeightUiState,
+    contentPadding: PaddingValues,
+    onRecordLineColorSelected: (Int?) -> Unit,
+    onMovingAverageLineColorSelected: (Int) -> Unit,
+    onMovingAverageDaysChanged: (Int) -> Unit
+) {
+    var settingsPage by rememberSaveable { mutableStateOf(SettingsPage.Menu) }
+
+    when (settingsPage) {
+        SettingsPage.Menu -> SettingsMenuScreen(
+            contentPadding = contentPadding,
+            onOpenColorSettings = { settingsPage = SettingsPage.Color },
+            onOpenMovingAverageSettings = { settingsPage = SettingsPage.MovingAverage }
+        )
+
+        SettingsPage.Color -> ColorSettingsScreen(
+            uiState = uiState,
+            contentPadding = contentPadding,
+            onBack = { settingsPage = SettingsPage.Menu },
+            onRecordLineColorSelected = onRecordLineColorSelected,
+            onMovingAverageLineColorSelected = onMovingAverageLineColorSelected
+        )
+
+        SettingsPage.MovingAverage -> MovingAverageSettingsScreen(
+            uiState = uiState,
+            contentPadding = contentPadding,
+            onBack = { settingsPage = SettingsPage.Menu },
+            onMovingAverageDaysChanged = onMovingAverageDaysChanged
+        )
+    }
+}
+
+@Composable
+private fun SettingsMenuScreen(
+    contentPadding: PaddingValues,
+    onOpenColorSettings: () -> Unit,
+    onOpenMovingAverageSettings: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        SettingsMenuItem(
+            title = "色設定",
+            onClick = onOpenColorSettings
+        )
+        SettingsMenuItem(
+            title = "移動平均線",
+            onClick = onOpenMovingAverageSettings
+        )
+    }
+}
+
+@Composable
+private fun SettingsMenuItem(
+    title: String,
+    onClick: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = ">",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun ColorSettingsScreen(
+    uiState: WeightUiState,
+    contentPadding: PaddingValues,
+    onBack: () -> Unit,
+    onRecordLineColorSelected: (Int?) -> Unit,
+    onMovingAverageLineColorSelected: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        TextButton(
+            onClick = onBack,
+            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
+        ) {
+            Text("戻る")
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Text(
+                    text = "色設定",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                ColorSettingSection(
+                    title = "記録体重の線",
+                    selectedColorArgb = uiState.chartColorSettings.recordLineColorArgb
+                        ?: DefaultRecordLineColorArgb,
+                    options = ChartLineColorPalette,
+                    onColorSelected = { colorArgb ->
+                        onRecordLineColorSelected(colorArgb)
+                    }
+                )
+
+                ColorSettingSection(
+                    title = "移動平均線",
+                    selectedColorArgb = uiState.chartColorSettings.movingAverageLineColorArgb,
+                    options = ChartLineColorPalette,
+                    onColorSelected = onMovingAverageLineColorSelected
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MovingAverageSettingsScreen(
+    uiState: WeightUiState,
+    contentPadding: PaddingValues,
+    onBack: () -> Unit,
+    onMovingAverageDaysChanged: (Int) -> Unit
+) {
+    val focusManager = LocalFocusManager.current
+    var daysInput by rememberSaveable(uiState.chartColorSettings.movingAverageDays) {
+        mutableStateOf(uiState.chartColorSettings.movingAverageDays.toString())
+    }
+    val parsedDays = daysInput.toIntOrNull()
+    val errorText = if (parsedDays == null || parsedDays < 1) {
+        "1以上の整数を入力してください"
+    } else {
+        null
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        TextButton(
+            onClick = onBack,
+            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
+        ) {
+            Text("戻る")
+        }
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "移動平均線",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                OutlinedTextField(
+                    value = daysInput,
+                    onValueChange = { input ->
+                        daysInput = input.filter { char -> char.isDigit() }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("移動平均の日数") },
+                    suffix = { Text("日") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    singleLine = true,
+                    isError = errorText != null,
+                    supportingText = {
+                        Text(errorText ?: "")
+                    }
+                )
+
+                Button(
+                    onClick = {
+                        if (parsedDays != null && parsedDays >= 1) {
+                            focusManager.clearFocus()
+                            onMovingAverageDaysChanged(parsedDays)
+                        }
+                    },
+                    enabled = errorText == null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("保存する")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColorSettingSection(
+    title: String,
+    selectedColorArgb: Int?,
+    options: List<ColorOption>,
+    onColorSelected: (Int) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        options.chunked(6).forEach { rowOptions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowOptions.forEach { option ->
+                    ColorOptionButton(
+                        option = option,
+                        selected = option.colorArgb == selectedColorArgb,
+                        onClick = { onColorSelected(option.colorArgb) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                repeat(6 - rowOptions.size) {
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColorOptionButton(
+    option: ColorOption,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(10.dp)
+    val previewColor = Color(option.colorArgb)
+    val outerBorderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant
+    }
+
+    Box(
+        modifier = modifier
+            .height(44.dp)
+            .background(
+                color = if (selected) MaterialTheme.colorScheme.primary else previewColor,
+                shape = shape
+            )
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = outerBorderColor,
+                shape = shape
+            )
+            .clickable(onClick = onClick)
+            .padding(if (selected) 3.dp else 0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(previewColor, shape)
+                .border(
+                    width = if (selected) 1.dp else 0.dp,
+                    color = Color.White,
+                    shape = shape
+                )
+        )
+    }
+}
+
+@Composable
 private fun WeightChart(
     modifier: Modifier = Modifier,
     points: List<ChartPoint>,
     dateRange: ChartDateRange,
+    recordLineColor: Color,
+    movingAverageLineColor: Color,
+    movingAverageDays: Int,
     trendLabel: String?
 ) {
     Column(
@@ -820,6 +1185,8 @@ private fun WeightChart(
                 chartMin = chartMin.toDouble(),
                 chartMax = chartMax.toDouble(),
                 dateRange = dateRange,
+                recordLineColor = recordLineColor,
+                movingAverageLineColor = movingAverageLineColor,
                 chartTicks = chartTicks,
                 dottedChartTicks = dottedChartTicks
             )
@@ -840,15 +1207,15 @@ private fun WeightChart(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                LegendItem(
+                    color = recordLineColor,
+                    label = "記録体重"
+                )
                 if (points.any { it.secondaryValue != null }) {
                     LegendItem(
-                        color = MaterialTheme.colorScheme.primary,
-                        label = "記録体重"
+                        color = movingAverageLineColor,
+                        label = "${movingAverageDays}日移動平均"
                     )
-                LegendItem(
-                    color = MovingAverageColor,
-                    label = "7日移動平均"
-                )
                 }
             }
 
@@ -871,11 +1238,11 @@ private fun WeightChartCanvas(
     chartMin: Double,
     chartMax: Double,
     dateRange: ChartDateRange,
+    recordLineColor: Color,
+    movingAverageLineColor: Color,
     chartTicks: List<Double>,
     dottedChartTicks: List<Double>
 ) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MovingAverageColor
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
     val density = LocalDensity.current
 
@@ -961,7 +1328,7 @@ private fun WeightChartCanvas(
             Offset(xPosition(point.date), yPosition(point.value))
         }
 
-        drawSeries(primaryOffsets, color = primaryColor, strokeWidth = primaryStrokeWidth)
+        drawSeries(primaryOffsets, color = recordLineColor, strokeWidth = primaryStrokeWidth)
 
         val secondarySegments = mutableListOf<List<Offset>>()
         var currentSegment = mutableListOf<Offset>()
@@ -985,7 +1352,7 @@ private fun WeightChartCanvas(
         secondarySegments.forEach { offsets ->
             drawSeries(
                 offsets = offsets,
-                color = secondaryColor,
+                color = movingAverageLineColor,
                 strokeWidth = secondaryStrokeWidth
             )
         }
@@ -1137,6 +1504,11 @@ private data class ChartPoint(
     val date: LocalDate,
     val value: Double,
     val secondaryValue: Double? = null
+)
+
+private data class ColorOption(
+    val label: String,
+    val colorArgb: Int
 )
 
 private data class ChartDateRange(
