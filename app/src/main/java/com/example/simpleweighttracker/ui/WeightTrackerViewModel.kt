@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.simpleweighttracker.R
 import com.example.simpleweighttracker.data.ChartColorSettingsRepository
 import com.example.simpleweighttracker.data.WeightRecordRepository
 import com.example.simpleweighttracker.data.WeightTrackerDatabase
@@ -486,22 +487,22 @@ class WeightTrackerViewModel(
         val measuredWeight = WeightTrackerFormatters.parseDecimal(currentForm.measuredWeightInput)
         val clothesWeight = WeightTrackerFormatters.parseDecimal(currentForm.clothesWeightInput)
 
-        var measuredError: String? = null
-        var clothesError: String? = null
-        var generalError: String? = null
+        var measuredError: Int? = null
+        var clothesError: Int? = null
+        var generalError: Int? = null
 
         if (measuredWeight == null) {
-            measuredError = "体重計の値を入力してください"
+            measuredError = R.string.validation_measured_weight_required
         }
 
         if (clothesWeight == null) {
-            clothesError = "服の重さを入力してください"
+            clothesError = R.string.validation_clothes_weight_required
         } else if (clothesWeight !in 0.0..10.0) {
-            clothesError = "服の重さは0.0kgから10.0kgの範囲で入力してください"
+            clothesError = R.string.validation_clothes_weight_range
         }
 
         if (measuredWeight != null && clothesWeight != null && measuredWeight - clothesWeight <= 0.0) {
-            generalError = "記録体重が0以下になるため保存できません"
+            generalError = R.string.validation_net_weight_positive
         }
 
         return if (measuredError == null && clothesError == null && generalError == null) {

@@ -1,5 +1,7 @@
 package com.example.simpleweighttracker.model
 
+import androidx.annotation.StringRes
+import com.example.simpleweighttracker.R
 import java.time.LocalDate
 
 data class WeightRecord(
@@ -30,11 +32,11 @@ enum class GraphType {
 }
 
 enum class GraphRange(
-    val label: String
+    @StringRes val labelResId: Int
 ) {
-    OneMonth(label = "1か月"),
-    ThreeMonths(label = "3か月"),
-    SixMonths(label = "6か月"),
-    OneYear(label = "1年"),
-    All(label = "全期間")
+    OneMonth(labelResId = R.string.graph_range_one_month),
+    ThreeMonths(labelResId = R.string.graph_range_three_months),
+    SixMonths(labelResId = R.string.graph_range_six_months),
+    OneYear(labelResId = R.string.graph_range_one_year),
+    All(labelResId = R.string.graph_range_all)
 }

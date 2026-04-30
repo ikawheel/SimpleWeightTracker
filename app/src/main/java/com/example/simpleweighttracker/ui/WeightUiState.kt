@@ -14,9 +14,9 @@ data class RecordFormState(
     val clothesWeightInput: String = "0.0",
     val clothesWeightUsesDefaultPlaceholder: Boolean = false,
     val netWeightPreview: Double? = null,
-    val measuredWeightError: String? = null,
-    val clothesWeightError: String? = null,
-    val generalError: String? = null,
+    val measuredWeightError: Int? = null,
+    val clothesWeightError: Int? = null,
+    val generalError: Int? = null,
     val isEditing: Boolean = false
 )
 

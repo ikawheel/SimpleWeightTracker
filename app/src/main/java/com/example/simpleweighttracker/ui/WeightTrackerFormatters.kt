@@ -48,13 +48,11 @@ object WeightTrackerFormatters {
 
     fun formatInput(value: Double): String = weightFormatter.format(value)
 
-    fun formatMonthlyTrend(value: Double): String = "${signedWeightFormatter.format(value)} kg/月"
+    fun formatSignedWeightValue(value: Double): String = signedWeightFormatter.format(value)
 
     fun formatFullDate(date: LocalDate): String = date.format(fullDateFormatter)
 
     fun formatShortDate(date: LocalDate): String = date.format(shortDateFormatter)
-
-    fun formatWeekLabel(date: LocalDate): String = "${formatShortDate(date)}週"
 
     fun formatMonth(date: LocalDate): String = date.format(monthFormatter)
 

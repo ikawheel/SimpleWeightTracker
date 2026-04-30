@@ -1,5 +1,6 @@
 package com.example.simpleweighttracker.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,7 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -63,11 +64,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.simpleweighttracker.R
 import com.example.simpleweighttracker.model.GraphRange
 import com.example.simpleweighttracker.model.WeightRecord
 import java.time.LocalDate
@@ -78,24 +82,24 @@ import kotlin.math.floor
 private val DefaultRecordLineColorArgb = 0xFF1976D2.toInt()
 
 private val ChartLineColorPalette = listOf(
-    ColorOption(label = "薄い青", colorArgb = 0xFF64B5F6.toInt()),
-    ColorOption(label = "薄い緑", colorArgb = 0xFF81C784.toInt()),
-    ColorOption(label = "薄い黄", colorArgb = 0xFFFFD54F.toInt()),
-    ColorOption(label = "薄い橙", colorArgb = 0xFFFFB74D.toInt()),
-    ColorOption(label = "薄い赤", colorArgb = 0xFFE57373.toInt()),
-    ColorOption(label = "薄い紫", colorArgb = 0xFFBA68C8.toInt()),
-    ColorOption(label = "青", colorArgb = DefaultRecordLineColorArgb),
-    ColorOption(label = "緑", colorArgb = 0xFF2E7D32.toInt()),
-    ColorOption(label = "黄", colorArgb = 0xFFFBC02D.toInt()),
-    ColorOption(label = "橙", colorArgb = 0xFFFFA726.toInt()),
-    ColorOption(label = "赤", colorArgb = 0xFFC62828.toInt()),
-    ColorOption(label = "紫", colorArgb = 0xFF7B1FA2.toInt()),
-    ColorOption(label = "濃い青", colorArgb = 0xFF0D47A1.toInt()),
-    ColorOption(label = "濃い緑", colorArgb = 0xFF1B5E20.toInt()),
-    ColorOption(label = "濃い黄", colorArgb = 0xFFF57F17.toInt()),
-    ColorOption(label = "濃い橙", colorArgb = 0xFFE65100.toInt()),
-    ColorOption(label = "濃い赤", colorArgb = 0xFF8E0000.toInt()),
-    ColorOption(label = "濃い紫", colorArgb = 0xFF4A148C.toInt())
+    ColorOption(colorArgb = 0xFF64B5F6.toInt()),
+    ColorOption(colorArgb = 0xFF81C784.toInt()),
+    ColorOption(colorArgb = 0xFFFFD54F.toInt()),
+    ColorOption(colorArgb = 0xFFFFB74D.toInt()),
+    ColorOption(colorArgb = 0xFFE57373.toInt()),
+    ColorOption(colorArgb = 0xFFBA68C8.toInt()),
+    ColorOption(colorArgb = DefaultRecordLineColorArgb),
+    ColorOption(colorArgb = 0xFF2E7D32.toInt()),
+    ColorOption(colorArgb = 0xFFFBC02D.toInt()),
+    ColorOption(colorArgb = 0xFFFFA726.toInt()),
+    ColorOption(colorArgb = 0xFFC62828.toInt()),
+    ColorOption(colorArgb = 0xFF7B1FA2.toInt()),
+    ColorOption(colorArgb = 0xFF0D47A1.toInt()),
+    ColorOption(colorArgb = 0xFF1B5E20.toInt()),
+    ColorOption(colorArgb = 0xFFF57F17.toInt()),
+    ColorOption(colorArgb = 0xFFE65100.toInt()),
+    ColorOption(colorArgb = 0xFF8E0000.toInt()),
+    ColorOption(colorArgb = 0xFF4A148C.toInt())
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -184,7 +188,7 @@ fun WeightTrackerApp(
                                             verticalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
                                             Text(
-                                                text = tab.title,
+                                                text = stringResource(tab.titleResId),
                                                 style = MaterialTheme.typography.labelLarge,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = if (selected) {
@@ -259,11 +263,11 @@ fun WeightTrackerApp(
 }
 
 private enum class AppTab(
-    val title: String
+    @StringRes val titleResId: Int
 ) {
-    List(title = "一覧"),
-    Chart(title = "グラフ"),
-    Settings(title = "設定")
+    List(titleResId = R.string.tab_list),
+    Chart(titleResId = R.string.tab_chart),
+    Settings(titleResId = R.string.tab_settings)
 }
 
 private enum class SettingsPage {
@@ -303,12 +307,12 @@ private fun RecordEditorDialog(
                         showDatePicker = false
                     }
                 ) {
-                    Text("決定")
+                    Text(stringResource(R.string.action_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("キャンセル")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         ) {
@@ -344,7 +348,7 @@ private fun RecordEditorDialog(
                                 onMeasuredWeightUnfocused()
                             }
                         },
-                    label = { Text("体重計の値") },
+                    label = { Text(stringResource(R.string.measured_weight_label)) },
                     suffix = { Text("kg") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
@@ -353,7 +357,7 @@ private fun RecordEditorDialog(
                     singleLine = true,
                     isError = formState.measuredWeightError != null,
                     supportingText = {
-                        Text(formState.measuredWeightError ?: "")
+                        Text(stringResourceOrEmpty(formState.measuredWeightError))
                     }
                 )
 
@@ -369,7 +373,7 @@ private fun RecordEditorDialog(
                                 onClothesWeightUnfocused()
                             }
                         },
-                    label = { Text("服の重さ") },
+                    label = { Text(stringResource(R.string.clothes_weight_label)) },
                     suffix = { Text("kg") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
@@ -378,7 +382,11 @@ private fun RecordEditorDialog(
                     singleLine = true,
                     isError = formState.clothesWeightError != null,
                     supportingText = {
-                        Text(formState.clothesWeightError ?: "次回入力時はこの値が初期値になります")
+                        Text(
+                            formState.clothesWeightError?.let { errorResId ->
+                                stringResource(errorResId)
+                            } ?: stringResource(R.string.clothes_weight_supporting_text)
+                        )
                     }
                 )
 
@@ -393,12 +401,20 @@ private fun RecordEditorDialog(
                 onClick = onSave,
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text(if (formState.isEditing) "更新する" else "保存する")
+                Text(
+                    stringResource(
+                        if (formState.isEditing) {
+                            R.string.action_update
+                        } else {
+                            R.string.action_save
+                        }
+                    )
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("キャンセル")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -422,7 +438,7 @@ private fun DateSelector(
 @Composable
 private fun NetWeightPreviewCard(
     preview: Double?,
-    generalError: String?
+    generalError: Int?
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -434,7 +450,7 @@ private fun NetWeightPreviewCard(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
-                text = "記録体重プレビュー",
+                text = stringResource(R.string.net_weight_preview_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -449,7 +465,7 @@ private fun NetWeightPreviewCard(
             )
             if (generalError != null) {
                 Text(
-                    text = generalError,
+                    text = stringResource(generalError),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -474,10 +490,13 @@ private fun RecordsScreen(
     if (pendingDelete != null) {
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text("記録を削除しますか") },
+            title = { Text(stringResource(R.string.delete_record_title)) },
             text = {
                 Text(
-                    "日付：${WeightTrackerFormatters.formatFullDate(pendingDelete!!.date)}"
+                    stringResource(
+                        R.string.delete_record_date,
+                        WeightTrackerFormatters.formatFullDate(pendingDelete!!.date)
+                    )
                 )
             },
             confirmButton = {
@@ -487,12 +506,12 @@ private fun RecordsScreen(
                         pendingDelete = null
                     }
                 ) {
-                    Text("削除")
+                    Text(stringResource(R.string.action_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) {
-                    Text("キャンセル")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -501,9 +520,9 @@ private fun RecordsScreen(
     if (showDeleteAllDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteAllDialog = false },
-            title = { Text("全データを削除しますか") },
+            title = { Text(stringResource(R.string.delete_all_title)) },
             text = {
-                Text("この操作は取り消せません。保存済みの体重記録をすべて削除します。")
+                Text(stringResource(R.string.delete_all_message))
             },
             confirmButton = {
                 TextButton(
@@ -512,12 +531,12 @@ private fun RecordsScreen(
                         showDeleteAllDialog = false
                     }
                 ) {
-                    Text("全削除")
+                    Text(stringResource(R.string.action_delete_all))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteAllDialog = false }) {
-                    Text("キャンセル")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -542,7 +561,7 @@ private fun RecordsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "記録がありません",
+                            text = stringResource(R.string.empty_records),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -590,14 +609,14 @@ private fun RecordsScreen(
                                         onClick = { onEdit(record) },
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                                     ) {
-                                        Text("編集")
+                                        Text(stringResource(R.string.action_edit))
                                     }
                                     TextButton(
                                         onClick = { pendingDelete = record },
                                         modifier = Modifier.defaultMinSize(minWidth = 1.dp, minHeight = 1.dp),
                                         contentPadding = PaddingValues(start = 8.dp, top = 0.dp, end = 0.dp, bottom = 0.dp)
                                     ) {
-                                        Text("削除")
+                                        Text(stringResource(R.string.action_delete))
                                     }
                                 }
                             }
@@ -631,7 +650,7 @@ private fun RecordsScreen(
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
-                    Text("体重を記入")
+                    Text(stringResource(R.string.add_weight_record))
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -646,7 +665,7 @@ private fun RecordsScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text("デバッグ投入")
+                        Text(stringResource(R.string.insert_debug_data))
                     }
                     Button(
                         onClick = { showDeleteAllDialog = true },
@@ -657,7 +676,7 @@ private fun RecordsScreen(
                             contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
-                        Text("データ全削除")
+                        Text(stringResource(R.string.delete_all_data))
                     }
                 }
             }
@@ -684,6 +703,13 @@ private fun ChartScreen(
     val trendPerMonth = remember(uiState.dailyChartData) {
         calculateMonthlyTrendPerMonth(uiState.dailyChartData)
     }
+    val trendLabel = trendPerMonth?.let { monthlyTrend ->
+        val monthlyTrendText = stringResource(
+            R.string.monthly_trend_value,
+            WeightTrackerFormatters.formatSignedWeightValue(monthlyTrend)
+        )
+        stringResource(R.string.chart_trend_label, monthlyTrendText)
+    }
     val dailyPoints = uiState.dailyChartData.map { point ->
         ChartPoint(
             date = point.date,
@@ -706,9 +732,7 @@ private fun ChartScreen(
             recordLineColor = recordLineColor,
             movingAverageLineColor = movingAverageLineColor,
             movingAverageDays = uiState.chartColorSettings.movingAverageDays,
-            trendLabel = trendPerMonth?.let { monthlyTrend ->
-                "体重増減の傾向 ${WeightTrackerFormatters.formatMonthlyTrend(monthlyTrend)}"
-            }
+            trendLabel = trendLabel
         )
 
         Row(
@@ -738,7 +762,7 @@ private fun GraphRangeButton(
 ) {
     val shape = RoundedCornerShape(999.dp)
     val backgroundColor = if (selected) {
-        MaterialTheme.colorScheme.secondaryContainer
+        MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.surface
     }
@@ -748,7 +772,7 @@ private fun GraphRangeButton(
         MaterialTheme.colorScheme.outlineVariant
     }
     val contentColor = if (selected) {
-        MaterialTheme.colorScheme.onSecondaryContainer
+        MaterialTheme.colorScheme.onPrimary
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
@@ -756,13 +780,14 @@ private fun GraphRangeButton(
     Box(
         modifier = modifier
             .height(36.dp)
+            .clip(shape)
             .background(backgroundColor, shape)
             .border(width = 1.dp, color = borderColor, shape = shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = graphRange.label,
+            text = stringResource(graphRange.labelResId),
             style = MaterialTheme.typography.labelSmall,
             color = contentColor,
             textAlign = TextAlign.Center
@@ -818,11 +843,11 @@ private fun SettingsMenuScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         SettingsMenuItem(
-            title = "色設定",
+            titleResId = R.string.settings_color,
             onClick = onOpenColorSettings
         )
         SettingsMenuItem(
-            title = "移動平均線",
+            titleResId = R.string.settings_moving_average,
             onClick = onOpenMovingAverageSettings
         )
     }
@@ -830,7 +855,7 @@ private fun SettingsMenuScreen(
 
 @Composable
 private fun SettingsMenuItem(
-    title: String,
+    @StringRes titleResId: Int,
     onClick: () -> Unit
 ) {
     Card(
@@ -848,7 +873,7 @@ private fun SettingsMenuItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = title,
+                text = stringResource(titleResId),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )
@@ -881,7 +906,7 @@ private fun ColorSettingsScreen(
             onClick = onBack,
             contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
         ) {
-            Text("戻る")
+            Text(stringResource(R.string.action_back))
         }
 
         Card(
@@ -895,13 +920,13 @@ private fun ColorSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 Text(
-                    text = "色設定",
+                    text = stringResource(R.string.settings_color),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
 
                 ColorSettingSection(
-                    title = "記録体重の線",
+                    titleResId = R.string.record_line_title,
                     selectedColorArgb = uiState.chartColorSettings.recordLineColorArgb
                         ?: DefaultRecordLineColorArgb,
                     options = ChartLineColorPalette,
@@ -911,7 +936,7 @@ private fun ColorSettingsScreen(
                 )
 
                 ColorSettingSection(
-                    title = "移動平均線",
+                    titleResId = R.string.settings_moving_average,
                     selectedColorArgb = uiState.chartColorSettings.movingAverageLineColorArgb,
                     options = ChartLineColorPalette,
                     onColorSelected = onMovingAverageLineColorSelected
@@ -933,8 +958,8 @@ private fun MovingAverageSettingsScreen(
         mutableStateOf(uiState.chartColorSettings.movingAverageDays.toString())
     }
     val parsedDays = daysInput.toIntOrNull()
-    val errorText = if (parsedDays == null || parsedDays < 1) {
-        "1以上の整数を入力してください"
+    val errorTextResId = if (parsedDays == null || parsedDays < 1) {
+        R.string.validation_moving_average_days
     } else {
         null
     }
@@ -951,7 +976,7 @@ private fun MovingAverageSettingsScreen(
             onClick = onBack,
             contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
         ) {
-            Text("戻る")
+            Text(stringResource(R.string.action_back))
         }
 
         Card(
@@ -965,7 +990,7 @@ private fun MovingAverageSettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "移動平均線",
+                    text = stringResource(R.string.settings_moving_average),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -976,16 +1001,16 @@ private fun MovingAverageSettingsScreen(
                         daysInput = input.filter { char -> char.isDigit() }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("移動平均の日数") },
-                    suffix = { Text("日") },
+                    label = { Text(stringResource(R.string.moving_average_days_label)) },
+                    suffix = { Text(stringResource(R.string.day_suffix)) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Done
                     ),
                     singleLine = true,
-                    isError = errorText != null,
+                    isError = errorTextResId != null,
                     supportingText = {
-                        Text(errorText ?: "")
+                        Text(stringResourceOrEmpty(errorTextResId))
                     }
                 )
 
@@ -996,11 +1021,11 @@ private fun MovingAverageSettingsScreen(
                             onMovingAverageDaysChanged(parsedDays)
                         }
                     },
-                    enabled = errorText == null,
+                    enabled = errorTextResId == null,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("保存する")
+                    Text(stringResource(R.string.action_save))
                 }
             }
         }
@@ -1009,7 +1034,7 @@ private fun MovingAverageSettingsScreen(
 
 @Composable
 private fun ColorSettingSection(
-    title: String,
+    @StringRes titleResId: Int,
     selectedColorArgb: Int?,
     options: List<ColorOption>,
     onColorSelected: (Int) -> Unit
@@ -1018,7 +1043,7 @@ private fun ColorSettingSection(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = title,
+            text = stringResource(titleResId),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -1111,7 +1136,7 @@ private fun WeightChart(
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Text("記録がありません")
+                Text(stringResource(R.string.empty_records))
             }
             ChartXAxis(
                 dateRange = dateRange,
@@ -1203,18 +1228,20 @@ private fun WeightChart(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LegendItem(
                     color = recordLineColor,
-                    label = "記録体重"
+                    label = stringResource(R.string.legend_record_weight)
                 )
                 if (points.any { it.secondaryValue != null }) {
                     LegendItem(
                         color = movingAverageLineColor,
-                        label = "${movingAverageDays}日移動平均"
+                        label = stringResource(R.string.legend_moving_average, movingAverageDays)
                     )
                 }
             }
@@ -1480,6 +1507,11 @@ private fun ChartXAxis(
 }
 
 @Composable
+private fun stringResourceOrEmpty(@StringRes resId: Int?): String {
+    return resId?.let { stringResource(it) } ?: ""
+}
+
+@Composable
 private fun LegendItem(
     color: androidx.compose.ui.graphics.Color,
     label: String
@@ -1507,7 +1539,6 @@ private data class ChartPoint(
 )
 
 private data class ColorOption(
-    val label: String,
     val colorArgb: Int
 )
 
