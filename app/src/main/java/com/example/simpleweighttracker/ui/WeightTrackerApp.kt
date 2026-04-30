@@ -12,16 +12,17 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -81,8 +82,7 @@ fun WeightTrackerApp(
 
     MaterialTheme {
         val navigationBackground = MaterialTheme.colorScheme.surfaceContainer
-        val navigationBottomInset =
-            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val statusBarBackground = MaterialTheme.colorScheme.primary
 
         if (showEditorDialog) {
             RecordEditorDialog(
@@ -102,105 +102,119 @@ fun WeightTrackerApp(
             )
         }
 
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background,
-            bottomBar = {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = navigationBackground,
-                    tonalElevation = 0.dp,
-                    shadowElevation = 0.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(navigationBackground)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                containerColor = MaterialTheme.colorScheme.background,
+                bottomBar = {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = navigationBackground,
+                        tonalElevation = 0.dp,
+                        shadowElevation = 0.dp
                     ) {
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp + navigationBottomInset)
                                 .background(navigationBackground)
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                .navigationBarsPadding()
                         ) {
-                            AppTab.entries.forEach { tab ->
-                                val selected = selectedTab == tab
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .fillMaxHeight()
-                                        .background(navigationBackground)
-                                        .clickable { selectedTab = tab }
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.TopCenter
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(top = 12.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .background(navigationBackground)
+                                    .padding(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                AppTab.entries.forEach { tab ->
+                                    val selected = selectedTab == tab
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
+                                            .background(navigationBackground)
+                                            .clickable { selectedTab = tab }
+                                            .padding(horizontal = 12.dp),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = tab.title,
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = if (selected) {
-                                                MaterialTheme.colorScheme.onSurface
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            }
-                                        )
-                                        Box(
-                                            modifier = Modifier
-                                                .height(2.dp)
-                                                .width(36.dp)
-                                                .background(
-                                                    color = if (selected) {
-                                                        MaterialTheme.colorScheme.primary
-                                                    } else {
-                                                        androidx.compose.ui.graphics.Color.Transparent
-                                                    },
-                                                    shape = RoundedCornerShape(999.dp)
-                                                )
-                                        )
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = tab.title,
+                                                style = MaterialTheme.typography.labelLarge,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (selected) {
+                                                    MaterialTheme.colorScheme.onSurface
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                }
+                                            )
+                                            Box(
+                                                modifier = Modifier
+                                                    .height(2.dp)
+                                                    .width(36.dp)
+                                                    .background(
+                                                        color = if (selected) {
+                                                            MaterialTheme.colorScheme.primary
+                                                        } else {
+                                                            androidx.compose.ui.graphics.Color.Transparent
+                                                        },
+                                                        shape = RoundedCornerShape(999.dp)
+                                                    )
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-        ) { innerPadding ->
-            when (selectedTab) {
-                AppTab.List -> RecordsScreen(
-                    records = uiState.records,
-                    contentPadding = innerPadding,
-                    onAdd = {
-                        viewModel.startCreating()
-                        showEditorDialog = true
-                    },
-                    onInsertDebugData = viewModel::insertDebugRecords,
-                    onDeleteAllData = viewModel::deleteAllRecords,
-                    onEdit = { record ->
-                        viewModel.startEditing(record)
-                        showEditorDialog = true
-                    },
-                    onDelete = viewModel::deleteRecord
-                )
+            ) { innerPadding ->
+                when (selectedTab) {
+                    AppTab.List -> RecordsScreen(
+                        records = uiState.records,
+                        contentPadding = innerPadding,
+                        onAdd = {
+                            viewModel.startCreating()
+                            showEditorDialog = true
+                        },
+                        onInsertDebugData = viewModel::insertDebugRecords,
+                        onDeleteAllData = viewModel::deleteAllRecords,
+                        onEdit = { record ->
+                            viewModel.startEditing(record)
+                            showEditorDialog = true
+                        },
+                        onDelete = viewModel::deleteRecord
+                    )
 
-                AppTab.Chart -> ChartScreen(
-                    uiState = uiState,
-                    contentPadding = innerPadding,
-                    onGraphRangeSelected = viewModel::selectGraphRange
-                )
+                    AppTab.Chart -> ChartScreen(
+                        uiState = uiState,
+                        contentPadding = innerPadding,
+                        onGraphRangeSelected = viewModel::selectGraphRange
+                    )
+                }
             }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                    .background(statusBarBackground)
+            )
         }
     }
 }
