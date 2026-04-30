@@ -13,6 +13,7 @@ import kotlin.math.round
 object WeightTrackerFormatters {
     private val decimalSymbols = DecimalFormatSymbols(Locale.US)
     private val weightFormatter = DecimalFormat("0.0#", decimalSymbols)
+    private val signedWeightFormatter = DecimalFormat("+0.00;-0.00", decimalSymbols)
     private val fullDateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
     private val shortDateFormatter = DateTimeFormatter.ofPattern("M/d")
     private val monthFormatter = DateTimeFormatter.ofPattern("yyyy/MM")
@@ -44,6 +45,8 @@ object WeightTrackerFormatters {
     fun formatIntegerValue(value: Int): String = value.toString()
 
     fun formatInput(value: Double): String = weightFormatter.format(value)
+
+    fun formatMonthlyTrend(value: Double): String = "${signedWeightFormatter.format(value)} kg/月"
 
     fun formatFullDate(date: LocalDate): String = date.format(fullDateFormatter)
 

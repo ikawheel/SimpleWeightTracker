@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -89,7 +90,11 @@ fun WeightTrackerApp(
                 uiState = uiState,
                 onDateChanged = viewModel::updateDate,
                 onMeasuredWeightChanged = viewModel::updateMeasuredWeight,
+                onMeasuredWeightFocused = viewModel::clearMeasuredWeightDefaultOnFocus,
+                onMeasuredWeightUnfocused = viewModel::restoreMeasuredWeightDefaultOnBlur,
                 onClothesWeightChanged = viewModel::updateClothesWeight,
+                onClothesWeightFocused = viewModel::clearClothesWeightDefaultOnFocus,
+                onClothesWeightUnfocused = viewModel::restoreClothesWeightDefaultOnBlur,
                 onSave = {
                     if (viewModel.saveRecord()) {
                         showEditorDialog = false
@@ -232,7 +237,11 @@ private fun RecordEditorDialog(
     uiState: WeightUiState,
     onDateChanged: (java.time.LocalDate) -> Unit,
     onMeasuredWeightChanged: (String) -> Unit,
+    onMeasuredWeightFocused: () -> Unit,
+    onMeasuredWeightUnfocused: () -> Unit,
     onClothesWeightChanged: (String) -> Unit,
+    onClothesWeightFocused: () -> Unit,
+    onClothesWeightUnfocused: () -> Unit,
     onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -285,7 +294,15 @@ private fun RecordEditorDialog(
                 OutlinedTextField(
                     value = formState.measuredWeightInput,
                     onValueChange = onMeasuredWeightChanged,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                onMeasuredWeightFocused()
+                            } else {
+                                onMeasuredWeightUnfocused()
+                            }
+                        },
                     label = { Text("体重計の値") },
                     suffix = { Text("kg") },
                     keyboardOptions = KeyboardOptions(
@@ -302,7 +319,15 @@ private fun RecordEditorDialog(
                 OutlinedTextField(
                     value = formState.clothesWeightInput,
                     onValueChange = onClothesWeightChanged,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                onClothesWeightFocused()
+                            } else {
+                                onClothesWeightUnfocused()
+                            }
+                        },
                     label = { Text("服の重さ") },
                     suffix = { Text("kg") },
                     keyboardOptions = KeyboardOptions(
@@ -606,6 +631,9 @@ private fun ChartScreen(
     contentPadding: PaddingValues,
     onGraphRangeSelected: (GraphRange) -> Unit
 ) {
+    val trendPerMonth = remember(uiState.dailyChartData) {
+        calculateMonthlyTrendPerMonth(uiState.dailyChartData)
+    }
     val dailyPoints = uiState.dailyChartData.map { point ->
         ChartPoint(
             label = WeightTrackerFormatters.formatShortDate(point.date),
@@ -637,7 +665,10 @@ private fun ChartScreen(
         WeightChart(
             title = "日ごとの最低記録体重",
             subtitle = "7日移動平均を重ねて表示します。",
-            points = dailyPoints
+            points = dailyPoints,
+            trendLabel = trendPerMonth?.let { monthlyTrend ->
+                "線形回帰 ${WeightTrackerFormatters.formatMonthlyTrend(monthlyTrend)}"
+            }
         )
     }
 }
@@ -646,7 +677,8 @@ private fun ChartScreen(
 private fun WeightChart(
     title: String,
     subtitle: String,
-    points: List<ChartPoint>
+    points: List<ChartPoint>,
+    trendLabel: String?
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -747,6 +779,16 @@ private fun WeightChart(
                         label = "7日移動平均"
                     )
                 }
+            }
+
+            if (trendLabel != null) {
+                Text(
+                    text = trendLabel,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End
+                )
             }
         }
     }
@@ -976,6 +1018,35 @@ private data class ChartPoint(
     val value: Double,
     val secondaryValue: Double? = null
 )
+
+private fun calculateMonthlyTrendPerMonth(
+    points: List<com.example.simpleweighttracker.model.DailyWeightPoint>
+): Double? {
+    if (points.size < 2) {
+        return null
+    }
+
+    val baseEpochDay = points.first().date.toEpochDay().toDouble()
+    val xs = points.map { point -> point.date.toEpochDay().toDouble() - baseEpochDay }
+    val ys = points.map { point -> point.netWeight }
+    val meanX = xs.average()
+    val meanY = ys.average()
+    val numerator = xs.indices.sumOf { index ->
+        (xs[index] - meanX) * (ys[index] - meanY)
+    }
+    val denominator = xs.sumOf { x ->
+        val diff = x - meanX
+        diff * diff
+    }
+
+    if (denominator == 0.0) {
+        return null
+    }
+
+    val slopePerDay = numerator / denominator
+    val slopePerMonth = slopePerDay * 30.44
+    return WeightTrackerFormatters.roundToTwoDecimals(slopePerMonth)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

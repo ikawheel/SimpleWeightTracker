@@ -21,7 +21,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 private const val DEBUG_CLOTHES_WEIGHT = 1.35
-private const val DEFAULT_NEW_MEASURED_WEIGHT_INPUT = "0"
+private const val DEFAULT_ZERO_INPUT = "0"
+private const val DEFAULT_NEW_MEASURED_WEIGHT_INPUT = DEFAULT_ZERO_INPUT
 
 private data class DebugRecordSeed(
     val date: LocalDate,
@@ -165,10 +166,11 @@ class WeightTrackerViewModel(
                     current
                 } else {
                     current.copy(
-                        clothesWeightInput = WeightTrackerFormatters.formatInput(latestClothesWeight),
+                        clothesWeightInput = formatDefaultClothesWeightInput(latestClothesWeight),
+                        clothesWeightUsesDefaultPlaceholder = latestClothesWeight == 0.0,
                         netWeightPreview = calculateNetWeightPreview(
                             measuredWeightInput = current.measuredWeightInput,
-                            clothesWeightInput = WeightTrackerFormatters.formatInput(latestClothesWeight)
+                            clothesWeightInput = formatDefaultClothesWeightInput(latestClothesWeight)
                         )
                     )
                 }
@@ -177,9 +179,50 @@ class WeightTrackerViewModel(
     }
 
     fun updateMeasuredWeight(input: String) {
+        val previousInput = formState.value.measuredWeightInput
         updateForm {
             copy(
-                measuredWeightInput = WeightTrackerFormatters.normalizeDecimalInput(input),
+                measuredWeightInput = normalizeMeasuredWeightInput(
+                    previousInput = previousInput,
+                    newInput = input
+                ),
+                measuredWeightUsesDefaultPlaceholder = false,
+                measuredWeightError = null,
+                generalError = null
+            )
+        }
+    }
+
+    fun clearMeasuredWeightDefaultOnFocus() {
+        val currentForm = formState.value
+        if (
+            currentForm.isEditing ||
+            !currentForm.measuredWeightUsesDefaultPlaceholder ||
+            currentForm.measuredWeightInput != DEFAULT_NEW_MEASURED_WEIGHT_INPUT
+        ) {
+            return
+        }
+
+        updateForm {
+            copy(
+                measuredWeightInput = "",
+                measuredWeightUsesDefaultPlaceholder = false,
+                measuredWeightError = null,
+                generalError = null
+            )
+        }
+    }
+
+    fun restoreMeasuredWeightDefaultOnBlur() {
+        val currentForm = formState.value
+        if (currentForm.measuredWeightInput.isNotBlank()) {
+            return
+        }
+
+        updateForm {
+            copy(
+                measuredWeightInput = DEFAULT_ZERO_INPUT,
+                measuredWeightUsesDefaultPlaceholder = true,
                 measuredWeightError = null,
                 generalError = null
             )
@@ -190,6 +233,42 @@ class WeightTrackerViewModel(
         updateForm {
             copy(
                 clothesWeightInput = WeightTrackerFormatters.normalizeDecimalInput(input),
+                clothesWeightUsesDefaultPlaceholder = false,
+                clothesWeightError = null,
+                generalError = null
+            )
+        }
+    }
+
+    fun clearClothesWeightDefaultOnFocus() {
+        val currentForm = formState.value
+        if (
+            !currentForm.clothesWeightUsesDefaultPlaceholder ||
+            currentForm.clothesWeightInput != DEFAULT_ZERO_INPUT
+        ) {
+            return
+        }
+
+        updateForm {
+            copy(
+                clothesWeightInput = "",
+                clothesWeightUsesDefaultPlaceholder = false,
+                clothesWeightError = null,
+                generalError = null
+            )
+        }
+    }
+
+    fun restoreClothesWeightDefaultOnBlur() {
+        val currentForm = formState.value
+        if (currentForm.clothesWeightInput.isNotBlank()) {
+            return
+        }
+
+        updateForm {
+            copy(
+                clothesWeightInput = DEFAULT_ZERO_INPUT,
+                clothesWeightUsesDefaultPlaceholder = true,
                 clothesWeightError = null,
                 generalError = null
             )
@@ -214,7 +293,9 @@ class WeightTrackerViewModel(
             recordId = record.id,
             date = record.date,
             measuredWeightInput = WeightTrackerFormatters.formatInput(record.measuredWeight),
+            measuredWeightUsesDefaultPlaceholder = false,
             clothesWeightInput = WeightTrackerFormatters.formatInput(record.clothesWeight),
+            clothesWeightUsesDefaultPlaceholder = false,
             netWeightPreview = WeightTrackerFormatters.roundToTwoDecimals(record.netWeight),
             isEditing = true
         )
@@ -345,7 +426,7 @@ class WeightTrackerViewModel(
                 currentForm.measuredWeightInput.isBlank() ||
                     currentForm.measuredWeightInput == DEFAULT_NEW_MEASURED_WEIGHT_INPUT
                 ) &&
-            currentForm.clothesWeightInput == WeightTrackerFormatters.formatInput(previousLatestClothesWeight)
+            currentForm.clothesWeightInput == formatDefaultClothesWeightInput(previousLatestClothesWeight)
     }
 
     private fun currentLatestClothesWeight(): Double = records.value.firstOrNull()?.clothesWeight ?: 0.0
@@ -408,18 +489,46 @@ class WeightTrackerViewModel(
         }
     }
 
+    private fun normalizeMeasuredWeightInput(
+        previousInput: String,
+        newInput: String
+    ): String {
+        val normalized = WeightTrackerFormatters.normalizeDecimalInput(newInput)
+        if (previousInput != DEFAULT_NEW_MEASURED_WEIGHT_INPUT) {
+            return normalized
+        }
+
+        return when {
+            normalized.isBlank() -> normalized
+            normalized == DEFAULT_NEW_MEASURED_WEIGHT_INPUT -> normalized
+            normalized.startsWith("0.") -> normalized
+            normalized.startsWith(".") -> "0$normalized"
+            else -> normalized.trimStart('0').ifEmpty { DEFAULT_NEW_MEASURED_WEIGHT_INPUT }
+        }
+    }
+
     private fun resetForm(defaultClothesWeight: Double) {
-        val clothesWeightInput = WeightTrackerFormatters.formatInput(defaultClothesWeight)
+        val clothesWeightInput = formatDefaultClothesWeightInput(defaultClothesWeight)
         formState.value = RecordFormState(
             date = LocalDate.now(),
             measuredWeightInput = DEFAULT_NEW_MEASURED_WEIGHT_INPUT,
+            measuredWeightUsesDefaultPlaceholder = true,
             clothesWeightInput = clothesWeightInput,
+            clothesWeightUsesDefaultPlaceholder = defaultClothesWeight == 0.0,
             netWeightPreview = calculateNetWeightPreview(
                 measuredWeightInput = DEFAULT_NEW_MEASURED_WEIGHT_INPUT,
                 clothesWeightInput = clothesWeightInput
             ),
             isEditing = false
         )
+    }
+
+    private fun formatDefaultClothesWeightInput(value: Double): String {
+        return if (value == 0.0) {
+            DEFAULT_ZERO_INPUT
+        } else {
+            WeightTrackerFormatters.formatInput(value)
+        }
     }
 
     class Factory(
