@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -253,22 +254,7 @@ private fun RecordEditorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = if (formState.isEditing) "体重記録を編集" else "体重を記入",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "保存時に 体重 - 服の重さ を計算して記録体重として保存します。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
+        title = null,
         text = {
             Column(
                 modifier = Modifier
@@ -277,31 +263,16 @@ private fun RecordEditorDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (formState.isEditing) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                        )
-                    ) {
-                        Text(
-                            text = "このまま保存すると既存の記録を更新します。",
-                            modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-
                 DateSelector(
                     date = formState.date,
-                    onOpenPicker = { showDatePicker = true },
-                    onSetToday = { onDateChanged(java.time.LocalDate.now()) }
+                    onOpenPicker = { showDatePicker = true }
                 )
 
                 OutlinedTextField(
                     value = formState.measuredWeightInput,
                     onValueChange = onMeasuredWeightChanged,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("体重") },
+                    label = { Text("体重計の値") },
                     suffix = { Text("kg") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
@@ -310,7 +281,7 @@ private fun RecordEditorDialog(
                     singleLine = true,
                     isError = formState.measuredWeightError != null,
                     supportingText = {
-                        Text(formState.measuredWeightError ?: "20.0kg から 300.0kg")
+                        Text(formState.measuredWeightError ?: "")
                     }
                 )
 
@@ -333,7 +304,6 @@ private fun RecordEditorDialog(
 
                 NetWeightPreviewCard(
                     preview = formState.netWeightPreview,
-                    latestClothesWeight = uiState.latestClothesWeight,
                     generalError = formState.generalError
                 )
             }
@@ -357,28 +327,14 @@ private fun RecordEditorDialog(
 @Composable
 private fun DateSelector(
     date: java.time.LocalDate,
-    onOpenPicker: () -> Unit,
-    onSetToday: () -> Unit
+    onOpenPicker: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "日付",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Column {
+        OutlinedButton(
+            onClick = onOpenPicker,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            OutlinedButton(
-                onClick = onOpenPicker,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(WeightTrackerFormatters.formatFullDate(date))
-            }
-            OutlinedButton(onClick = onSetToday) {
-                Text("今日")
-            }
+            Text(WeightTrackerFormatters.formatFullDate(date))
         }
     }
 }
@@ -386,7 +342,6 @@ private fun DateSelector(
 @Composable
 private fun NetWeightPreviewCard(
     preview: Double?,
-    latestClothesWeight: Double,
     generalError: String?
 ) {
     Card(
@@ -411,11 +366,6 @@ private fun NetWeightPreviewCard(
                 } else {
                     MaterialTheme.colorScheme.onSurface
                 }
-            )
-            Text(
-                text = "次回の服の重さ初期値: ${WeightTrackerFormatters.formatWeight(latestClothesWeight)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (generalError != null) {
                 Text(
@@ -447,7 +397,7 @@ private fun RecordsScreen(
             title = { Text("記録を削除しますか") },
             text = {
                 Text(
-                    "${WeightTrackerFormatters.formatFullDate(pendingDelete!!.date)} の記録を削除します。"
+                    "日付：${WeightTrackerFormatters.formatFullDate(pendingDelete!!.date)}"
                 )
             },
             confirmButton = {
@@ -526,7 +476,7 @@ private fun RecordsScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Row(
@@ -535,12 +485,12 @@ private fun RecordsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = WeightTrackerFormatters.formatFullDate(record.date),
+                                    text = "${WeightTrackerFormatters.formatFullDate(record.date)} ${WeightTrackerFormatters.formatTime(record.updatedAt)}",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = WeightTrackerFormatters.formatWeight(record.measuredWeight),
+                                    text = WeightTrackerFormatters.formatWeight(record.netWeight),
                                     style = MaterialTheme.typography.titleLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold
@@ -549,14 +499,9 @@ private fun RecordsScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                horizontalArrangement = Arrangement.End,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "登録時刻 ${WeightTrackerFormatters.formatTime(record.createdAt)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -569,7 +514,8 @@ private fun RecordsScreen(
                                     }
                                     TextButton(
                                         onClick = { pendingDelete = record },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                        modifier = Modifier.defaultMinSize(minWidth = 1.dp, minHeight = 1.dp),
+                                        contentPadding = PaddingValues(start = 8.dp, top = 0.dp, end = 0.dp, bottom = 0.dp)
                                     ) {
                                         Text("削除")
                                     }
@@ -806,7 +752,8 @@ private fun WeightChartCanvas(
     val density = LocalDensity.current
 
     Canvas(modifier = modifier) {
-        val strokeWidth = with(density) { 3.dp.toPx() }
+        val primaryStrokeWidth = with(density) { 2.dp.toPx() }
+        val secondaryStrokeWidth = with(density) { 2.4.dp.toPx() }
         val gridStroke = with(density) { 1.dp.toPx() }
         val topPadding = with(density) { 8.dp.toPx() }
         val bottomPadding = with(density) { 10.dp.toPx() }
@@ -859,7 +806,7 @@ private fun WeightChartCanvas(
             Offset(xPosition(index), yPosition(point.value))
         }
 
-        drawSeries(primaryOffsets, color = primaryColor, strokeWidth = strokeWidth)
+        drawSeries(primaryOffsets, color = primaryColor, strokeWidth = primaryStrokeWidth)
 
         val secondarySegments = mutableListOf<List<Offset>>()
         var currentSegment = mutableListOf<Offset>()
@@ -884,7 +831,7 @@ private fun WeightChartCanvas(
             drawSeries(
                 offsets = offsets,
                 color = secondaryColor,
-                strokeWidth = strokeWidth * 0.8f
+                strokeWidth = secondaryStrokeWidth
             )
         }
     }

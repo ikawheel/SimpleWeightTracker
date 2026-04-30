@@ -19,8 +19,107 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlin.math.sin
-import kotlin.random.Random
+
+private const val DEBUG_CLOTHES_WEIGHT = 1.35
+private const val DEFAULT_NEW_MEASURED_WEIGHT_INPUT = "0"
+
+private data class DebugRecordSeed(
+    val date: LocalDate,
+    val measuredWeight: Double
+)
+
+private fun debugRecordSeed(
+    date: String,
+    measuredWeight: Double
+): DebugRecordSeed {
+    return DebugRecordSeed(
+        date = LocalDate.parse(date),
+        measuredWeight = measuredWeight
+    )
+}
+
+private val debugRecordSeeds = listOf(
+    debugRecordSeed("2026-02-09", 76.8),
+    debugRecordSeed("2026-02-10", 77.5),
+    debugRecordSeed("2026-02-11", 77.1),
+    debugRecordSeed("2026-02-12", 77.3),
+    debugRecordSeed("2026-02-13", 79.6),
+    debugRecordSeed("2026-02-14", 78.4),
+    debugRecordSeed("2026-02-15", 78.5),
+    debugRecordSeed("2026-02-16", 78.0),
+    debugRecordSeed("2026-02-17", 77.9),
+    debugRecordSeed("2026-02-18", 77.5),
+    debugRecordSeed("2026-02-19", 79.2),
+    debugRecordSeed("2026-02-20", 77.0),
+    debugRecordSeed("2026-02-21", 76.7),
+    debugRecordSeed("2026-02-22", 77.3),
+    debugRecordSeed("2026-02-23", 77.5),
+    debugRecordSeed("2026-02-24", 77.5),
+    debugRecordSeed("2026-02-25", 77.5),
+    debugRecordSeed("2026-02-26", 77.5),
+    debugRecordSeed("2026-02-27", 77.5),
+    debugRecordSeed("2026-02-28", 77.5),
+    debugRecordSeed("2026-03-01", 77.5),
+    debugRecordSeed("2026-03-02", 77.0),
+    debugRecordSeed("2026-03-03", 76.8),
+    debugRecordSeed("2026-03-04", 76.5),
+    debugRecordSeed("2026-03-05", 76.2),
+    debugRecordSeed("2026-03-06", 78.2),
+    debugRecordSeed("2026-03-07", 76.8),
+    debugRecordSeed("2026-03-08", 76.8),
+    debugRecordSeed("2026-03-09", 76.8),
+    debugRecordSeed("2026-03-10", 76.8),
+    debugRecordSeed("2026-03-11", 76.5),
+    debugRecordSeed("2026-03-12", 76.3),
+    debugRecordSeed("2026-03-13", 76.2),
+    debugRecordSeed("2026-03-14", 78.7),
+    debugRecordSeed("2026-03-15", 77.2),
+    debugRecordSeed("2026-03-16", 76.8),
+    debugRecordSeed("2026-03-17", 75.7),
+    debugRecordSeed("2026-03-18", 76.4),
+    debugRecordSeed("2026-03-19", 75.8),
+    debugRecordSeed("2026-03-20", 75.5),
+    debugRecordSeed("2026-03-21", 78.5),
+    debugRecordSeed("2026-03-22", 77.1),
+    debugRecordSeed("2026-03-23", 77.1),
+    debugRecordSeed("2026-03-24", 76.5),
+    debugRecordSeed("2026-03-25", 77.5),
+    debugRecordSeed("2026-03-26", 76.8),
+    debugRecordSeed("2026-03-27", 76.0),
+    debugRecordSeed("2026-03-28", 75.6),
+    debugRecordSeed("2026-03-29", 77.8),
+    debugRecordSeed("2026-03-30", 76.6),
+    debugRecordSeed("2026-03-31", 76.3),
+    debugRecordSeed("2026-04-01", 76.4),
+    debugRecordSeed("2026-04-02", 75.8),
+    debugRecordSeed("2026-04-03", 77.8),
+    debugRecordSeed("2026-04-04", 76.8),
+    debugRecordSeed("2026-04-05", 77.1),
+    debugRecordSeed("2026-04-06", 76.7),
+    debugRecordSeed("2026-04-07", 75.8),
+    debugRecordSeed("2026-04-08", 75.3),
+    debugRecordSeed("2026-04-09", 75.5),
+    debugRecordSeed("2026-04-10", 77.6),
+    debugRecordSeed("2026-04-11", 76.3),
+    debugRecordSeed("2026-04-12", 75.7),
+    debugRecordSeed("2026-04-13", 75.5),
+    debugRecordSeed("2026-04-14", 75.2),
+    debugRecordSeed("2026-04-15", 75.8),
+    debugRecordSeed("2026-04-16", 75.2),
+    debugRecordSeed("2026-04-17", 77.0),
+    debugRecordSeed("2026-04-18", 75.9),
+    debugRecordSeed("2026-04-19", 75.2),
+    debugRecordSeed("2026-04-20", 75.1),
+    debugRecordSeed("2026-04-21", 75.2),
+    debugRecordSeed("2026-04-22", 75.8),
+    debugRecordSeed("2026-04-23", 75.5),
+    debugRecordSeed("2026-04-24", 77.5),
+    debugRecordSeed("2026-04-25", 76.3),
+    debugRecordSeed("2026-04-26", 75.8),
+    debugRecordSeed("2026-04-27", 75.3),
+    debugRecordSeed("2026-04-28", 75.7),
+    debugRecordSeed("2026-04-29", 74.8)
+)
 
 class WeightTrackerViewModel(
     private val repository: WeightRecordRepository
@@ -185,43 +284,30 @@ class WeightTrackerViewModel(
     fun insertDebugRecords() {
         viewModelScope.launch {
             val existingDates = records.value.map(WeightRecord::date).toSet()
-            val endDate = LocalDate.now()
-            val startDate = endDate.minusMonths(6)
             val zoneId = ZoneId.systemDefault()
-            val random = Random(System.currentTimeMillis())
-
-            var currentDate = startDate
-            while (!currentDate.isAfter(endDate)) {
-                if (currentDate !in existingDates) {
-                    val dayOffset = java.time.temporal.ChronoUnit.DAYS.between(startDate, currentDate).toDouble()
-                    val measuredWeight = WeightTrackerFormatters.roundToTwoDecimals(
-                        (70.0 + sin(dayOffset / 9.0) * 0.45 + random.nextDouble(-0.35, 0.35))
-                            .coerceIn(68.8, 71.4)
-                    )
-                    val clothesWeight = WeightTrackerFormatters.roundToTwoDecimals(
-                        (0.6 + random.nextDouble(-0.18, 0.18)).coerceIn(0.2, 1.0)
-                    )
-                    val netWeight = WeightTrackerFormatters.roundToTwoDecimals(measuredWeight - clothesWeight)
-                    val createdAt = currentDate
-                        .atTime(7 + random.nextInt(0, 3), random.nextInt(0, 60))
+            debugRecordSeeds
+                .filterNot { seed -> seed.date in existingDates }
+                .forEachIndexed { index, seed ->
+                    val createdAt = seed.date
+                        .atTime(7 + (index % 3), (index * 11) % 60)
                         .atZone(zoneId)
                         .toInstant()
                         .toEpochMilli()
+                    val netWeight = WeightTrackerFormatters.roundToTwoDecimals(
+                        seed.measuredWeight - DEBUG_CLOTHES_WEIGHT
+                    )
 
                     repository.insert(
                         WeightRecord(
-                            date = currentDate,
-                            measuredWeight = measuredWeight,
-                            clothesWeight = clothesWeight,
+                            date = seed.date,
+                            measuredWeight = seed.measuredWeight,
+                            clothesWeight = DEBUG_CLOTHES_WEIGHT,
                             netWeight = netWeight,
                             createdAt = createdAt,
                             updatedAt = createdAt
                         )
                     )
                 }
-
-                currentDate = currentDate.plusDays(1)
-            }
         }
     }
 
@@ -255,7 +341,10 @@ class WeightTrackerViewModel(
     private fun shouldRefreshBlankForm(previousLatestClothesWeight: Double): Boolean {
         val currentForm = formState.value
         return !currentForm.isEditing &&
-            currentForm.measuredWeightInput.isBlank() &&
+            (
+                currentForm.measuredWeightInput.isBlank() ||
+                    currentForm.measuredWeightInput == DEFAULT_NEW_MEASURED_WEIGHT_INPUT
+                ) &&
             currentForm.clothesWeightInput == WeightTrackerFormatters.formatInput(previousLatestClothesWeight)
     }
 
@@ -291,9 +380,7 @@ class WeightTrackerViewModel(
         var generalError: String? = null
 
         if (measuredWeight == null) {
-            measuredError = "体重を入力してください"
-        } else if (measuredWeight !in 20.0..300.0) {
-            measuredError = "体重は20.0kgから300.0kgの範囲で入力してください"
+            measuredError = "体重計の値を入力してください"
         }
 
         if (clothesWeight == null) {
@@ -322,9 +409,15 @@ class WeightTrackerViewModel(
     }
 
     private fun resetForm(defaultClothesWeight: Double) {
+        val clothesWeightInput = WeightTrackerFormatters.formatInput(defaultClothesWeight)
         formState.value = RecordFormState(
             date = LocalDate.now(),
-            clothesWeightInput = WeightTrackerFormatters.formatInput(defaultClothesWeight),
+            measuredWeightInput = DEFAULT_NEW_MEASURED_WEIGHT_INPUT,
+            clothesWeightInput = clothesWeightInput,
+            netWeightPreview = calculateNetWeightPreview(
+                measuredWeightInput = DEFAULT_NEW_MEASURED_WEIGHT_INPUT,
+                clothesWeightInput = clothesWeightInput
+            ),
             isEditing = false
         )
     }
