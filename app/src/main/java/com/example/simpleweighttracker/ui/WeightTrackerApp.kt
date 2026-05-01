@@ -163,8 +163,6 @@ fun WeightTrackerApp(
                             viewModel.startCreating()
                             showEditorDialog = true
                         },
-                        onInsertDebugData = viewModel::insertDebugRecords,
-                        onDeleteAllData = viewModel::deleteAllRecords,
                         onEdit = { record ->
                             viewModel.startEditing(record)
                             showEditorDialog = true

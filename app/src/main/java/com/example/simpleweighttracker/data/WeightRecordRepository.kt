@@ -18,6 +18,4 @@ class WeightRecordRepository(
     suspend fun update(record: WeightRecord) = dao.update(record.toEntity())
 
     suspend fun delete(record: WeightRecord) = dao.delete(record.toEntity())
-
-    suspend fun deleteAll() = dao.deleteAll()
 }

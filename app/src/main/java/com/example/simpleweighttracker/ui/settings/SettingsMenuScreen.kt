@@ -25,7 +25,9 @@ import com.example.simpleweighttracker.R
 internal fun SettingsMenuScreen(
     contentPadding: PaddingValues,
     onOpenColorSettings: () -> Unit,
-    onOpenMovingAverageSettings: () -> Unit
+    onOpenMovingAverageSettings: () -> Unit,
+    onOpenLicenseSettings: () -> Unit,
+    onCsvExport: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -42,13 +44,23 @@ internal fun SettingsMenuScreen(
             titleResId = R.string.settings_moving_average,
             onClick = onOpenMovingAverageSettings
         )
+        SettingsMenuItem(
+            titleResId = R.string.settings_csv_export,
+            onClick = onCsvExport,
+            showsNavigationIndicator = false
+        )
+        SettingsMenuItem(
+            titleResId = R.string.settings_licenses,
+            onClick = onOpenLicenseSettings
+        )
     }
 }
 
 @Composable
 private fun SettingsMenuItem(
     @StringRes titleResId: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showsNavigationIndicator: Boolean = true
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -69,11 +81,13 @@ private fun SettingsMenuItem(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )
-            Text(
-                text = ">",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (showsNavigationIndicator) {
+                Text(
+                    text = ">",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

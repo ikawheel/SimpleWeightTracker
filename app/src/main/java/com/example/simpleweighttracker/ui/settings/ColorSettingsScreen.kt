@@ -66,12 +66,6 @@ internal fun ColorSettingsScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.settings_color),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-
                 ColorSettingSection(
                     titleResId = R.string.record_line_title,
                     selectedColorArgb = uiState.chartColorSettings.recordLineColorArgb

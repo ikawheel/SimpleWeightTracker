@@ -40,13 +40,10 @@ fun RecordsScreen(
     records: List<WeightRecord>,
     contentPadding: PaddingValues,
     onAdd: () -> Unit,
-    onInsertDebugData: () -> Unit,
-    onDeleteAllData: () -> Unit,
     onEdit: (WeightRecord) -> Unit,
     onDelete: (WeightRecord) -> Unit
 ) {
     var pendingDelete by remember { mutableStateOf<WeightRecord?>(null) }
-    var showDeleteAllDialog by remember { mutableStateOf(false) }
 
     if (pendingDelete != null) {
         AlertDialog(
@@ -78,31 +75,6 @@ fun RecordsScreen(
         )
     }
 
-    if (showDeleteAllDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteAllDialog = false },
-            title = { Text(stringResource(R.string.delete_all_title)) },
-            text = {
-                Text(stringResource(R.string.delete_all_message))
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteAllData()
-                        showDeleteAllDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.action_delete_all))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteAllDialog = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -110,7 +82,7 @@ fun RecordsScreen(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 220.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (records.isEmpty()) {
@@ -212,33 +184,6 @@ fun RecordsScreen(
                     )
                 ) {
                     Text(stringResource(R.string.add_weight_record))
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = onInsertDebugData,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(stringResource(R.string.insert_debug_data))
-                    }
-                    Button(
-                        onClick = { showDeleteAllDialog = true },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(stringResource(R.string.delete_all_data))
-                    }
                 }
             }
         }

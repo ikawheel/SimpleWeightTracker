@@ -23,7 +23,4 @@ interface WeightRecordDao {
 
     @Delete
     suspend fun delete(record: WeightRecordEntity)
-
-    @Query("DELETE FROM weight_records")
-    suspend fun deleteAll()
 }
