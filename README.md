@@ -6,7 +6,8 @@ Simple Weight Tracker は、体重計に表示された体重から服の重さ�
 
 
 
-https://github.com/user-attachments/assets/3b0a3363-b4f5-4dfe-be40-d0e96978436d
+
+https://github.com/user-attachments/assets/4aeaeb73-0f24-4d22-8c33-c691ad33eaa4
 
 
 
