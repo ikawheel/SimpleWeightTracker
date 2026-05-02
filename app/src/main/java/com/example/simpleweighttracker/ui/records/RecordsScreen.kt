@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -22,6 +23,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +46,14 @@ fun RecordsScreen(
     onDelete: (WeightRecord) -> Unit
 ) {
     var pendingDelete by remember { mutableStateOf<WeightRecord?>(null) }
+    val listState = rememberLazyListState()
+    val recordCount = records.size
+
+    LaunchedEffect(recordCount) {
+        if (recordCount > 0) {
+            listState.animateScrollToItem(0)
+        }
+    }
 
     if (pendingDelete != null) {
         AlertDialog(
@@ -81,6 +91,7 @@ fun RecordsScreen(
             .padding(contentPadding)
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
