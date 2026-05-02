@@ -117,7 +117,7 @@ fun RecordEditorDialog(
                     suffix = { Text("kg") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal,
-                        imeAction = ImeAction.Next
+                        imeAction = ImeAction.Done
                     ),
                     singleLine = true,
                     isError = formState.measuredWeightError != null,
