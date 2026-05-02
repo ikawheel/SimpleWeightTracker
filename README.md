@@ -5,9 +5,7 @@ Simple Weight Tracker は、体重計に表示された体重から服の重さ�
 アカウント登録やクラウド同期はなく、記録データは端末内に保存されます。
 
 
-
-https://github.com/user-attachments/assets/3b0a3363-b4f5-4dfe-be40-d0e96978436d
-
+https://github.com/user-attachments/assets/622a879f-0126-4cfd-8813-6a1198c4fe34
 
 
 ## Features
