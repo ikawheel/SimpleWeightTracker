@@ -58,6 +58,12 @@ fun ChartScreen(
     val dailyPoints = remember(uiState.dailyChartData) {
         buildChartPoints(uiState.dailyChartData)
     }
+    val xAxisTicks = remember(chartDateRange, uiState.selectedGraphRange) {
+        buildChartXAxisTicks(
+            dateRange = chartDateRange,
+            graphRange = uiState.selectedGraphRange
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -70,6 +76,7 @@ fun ChartScreen(
             modifier = Modifier.weight(1f),
             points = dailyPoints,
             dateRange = chartDateRange,
+            xAxisTicks = xAxisTicks,
             recordLineColor = recordLineColor,
             movingAverageLineColor = movingAverageLineColor,
             movingAverageDays = uiState.chartColorSettings.movingAverageDays,

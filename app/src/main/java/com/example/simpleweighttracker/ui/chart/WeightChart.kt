@@ -3,10 +3,13 @@ package com.example.simpleweighttracker.ui.chart
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,12 +26,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.simpleweighttracker.R
 import com.example.simpleweighttracker.ui.WeightTrackerFormatters
+import java.time.temporal.ChronoUnit
 
 @Composable
 internal fun WeightChart(
     modifier: Modifier = Modifier,
     points: List<ChartPoint>,
     dateRange: ChartDateRange,
+    xAxisTicks: List<ChartXAxisTick>,
     recordLineColor: Color,
     movingAverageLineColor: Color,
     movingAverageDays: Int,
@@ -51,6 +56,7 @@ internal fun WeightChart(
             }
             ChartXAxis(
                 dateRange = dateRange,
+                ticks = xAxisTicks,
                 modifier = Modifier.padding(start = 44.dp)
             )
             return@Column
@@ -96,6 +102,7 @@ internal fun WeightChart(
                 points = points,
                 chartScale = chartScale,
                 dateRange = dateRange,
+                xAxisTicks = xAxisTicks,
                 recordLineColor = recordLineColor,
                 movingAverageLineColor = movingAverageLineColor
             )
@@ -103,6 +110,7 @@ internal fun WeightChart(
 
         ChartXAxis(
             dateRange = dateRange,
+            ticks = xAxisTicks,
             modifier = Modifier.padding(start = 44.dp)
         )
 
@@ -145,60 +153,44 @@ internal fun WeightChart(
 @Composable
 private fun ChartXAxis(
     dateRange: ChartDateRange,
+    ticks: List<ChartXAxisTick>,
     modifier: Modifier = Modifier
 ) {
-    val labels = remember(dateRange) {
-        buildChartXAxisLabels(dateRange)
-    }
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(18.dp)
+    ) {
+        val labelWidth = 48.dp
+        val dataWidth = (maxWidth - ChartRightInset).coerceAtLeast(0.dp)
 
-    when (labels.size) {
-        1 -> Box(
-            modifier = modifier.fillMaxWidth()
-        ) {
+        ticks.forEach { tick ->
+            val ratio = calculateDatePositionRatio(dateRange = dateRange, date = tick.date)
+            val offset = dataWidth * ratio - labelWidth / 2f
             Text(
-                text = labels.first(),
-                modifier = Modifier.align(Alignment.Center),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        2 -> Row(
-            modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            labels.forEach { label ->
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        else -> Row(
-            modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = labels[0],
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = labels[1],
+                text = tick.label,
+                modifier = Modifier
+                    .width(labelWidth)
+                    .offset(x = offset),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
-            Text(
-                text = labels[2],
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.End
-            )
         }
     }
+}
+
+private fun calculateDatePositionRatio(
+    dateRange: ChartDateRange,
+    date: java.time.LocalDate
+): Float {
+    val dateSpanDays = ChronoUnit.DAYS
+        .between(dateRange.start, dateRange.end)
+        .coerceAtLeast(1L)
+    val elapsedDays = ChronoUnit.DAYS
+        .between(dateRange.start, date)
+        .coerceIn(0L, dateSpanDays)
+    return elapsedDays.toFloat() / dateSpanDays.toFloat()
 }
 
 @Composable

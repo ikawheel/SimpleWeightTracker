@@ -19,3 +19,8 @@ internal data class ChartScale(
     val ticks: List<Double>,
     val dottedTicks: List<Double>
 )
+
+internal data class ChartXAxisTick(
+    val date: LocalDate,
+    val label: String
+)

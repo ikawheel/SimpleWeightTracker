@@ -23,6 +23,7 @@ internal fun WeightChartCanvas(
     points: List<ChartPoint>,
     chartScale: ChartScale,
     dateRange: ChartDateRange,
+    xAxisTicks: List<ChartXAxisTick>,
     recordLineColor: Color,
     movingAverageLineColor: Color
 ) {
@@ -43,12 +44,14 @@ internal fun WeightChartCanvas(
         )
         val topPadding = with(density) { 8.dp.toPx() }
         val bottomPadding = with(density) { 10.dp.toPx() }
+        val rightInset = with(density) { ChartRightInset.toPx() }
 
         val left = 0f
         val right = size.width
+        val dataRight = (right - rightInset).coerceAtLeast(left)
         val top = topPadding
         val bottom = size.height - bottomPadding
-        val width = right - left
+        val width = dataRight - left
         val height = bottom - top
         val span = (chartScale.max - chartScale.min).coerceAtLeast(0.1)
 
@@ -91,6 +94,16 @@ internal fun WeightChartCanvas(
                 start = Offset(left, y),
                 end = Offset(right, y),
                 strokeWidth = stroke
+            )
+        }
+
+        xAxisTicks.forEach { tick ->
+            val x = xPosition(tick.date)
+            drawLine(
+                color = outlineColor.copy(alpha = 0.45f),
+                start = Offset(x, top),
+                end = Offset(x, bottom),
+                strokeWidth = gridStroke
             )
         }
 

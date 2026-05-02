@@ -5,7 +5,6 @@ import com.example.simpleweighttracker.model.GraphRange
 import com.example.simpleweighttracker.model.WeightRecord
 import com.example.simpleweighttracker.ui.WeightTrackerFormatters
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -68,20 +67,26 @@ internal fun buildChartScale(points: List<ChartPoint>): ChartScale {
     )
 }
 
-internal fun buildChartXAxisLabels(dateRange: ChartDateRange): List<String> {
-    val dateSpanDays = ChronoUnit.DAYS
-        .between(dateRange.start, dateRange.end)
-        .coerceAtLeast(0L)
-    return when (dateSpanDays) {
-        0L -> listOf(WeightTrackerFormatters.formatShortDate(dateRange.start))
-        1L -> listOf(
-            WeightTrackerFormatters.formatShortDate(dateRange.start),
-            WeightTrackerFormatters.formatShortDate(dateRange.end)
-        )
-        else -> listOf(
-            WeightTrackerFormatters.formatShortDate(dateRange.start),
-            WeightTrackerFormatters.formatShortDate(dateRange.start.plusDays(dateSpanDays / 2L)),
-            WeightTrackerFormatters.formatShortDate(dateRange.end)
+internal fun buildChartXAxisTicks(
+    dateRange: ChartDateRange,
+    graphRange: GraphRange
+): List<ChartXAxisTick> {
+    val dates = when (graphRange) {
+        GraphRange.OneMonth -> buildWeeklyTickDates(dateRange)
+        GraphRange.ThreeMonths,
+        GraphRange.SixMonths,
+        GraphRange.OneYear,
+        GraphRange.All -> buildMonthlyFirstTickDates(dateRange)
+    }
+
+    return dates.map { date ->
+        ChartXAxisTick(
+            date = date,
+            label = if (graphRange == GraphRange.OneYear) {
+                date.monthValue.toString()
+            } else {
+                WeightTrackerFormatters.formatShortDate(date)
+            }
         )
     }
 }
@@ -124,4 +129,23 @@ private fun buildDottedQuarterTicks(
     return (minQuarter..maxQuarter)
         .filter { quarterStep -> quarterStep % 2 != 0 }
         .map { quarterStep -> quarterStep / 4.0 }
+}
+
+private fun buildWeeklyTickDates(dateRange: ChartDateRange): List<LocalDate> {
+    return generateSequence(dateRange.start) { date -> date.plusWeeks(1) }
+        .takeWhile { date -> !date.isAfter(dateRange.end) }
+        .toList()
+}
+
+private fun buildMonthlyFirstTickDates(dateRange: ChartDateRange): List<LocalDate> {
+    val firstMonthStart = dateRange.start.withDayOfMonth(1)
+    val firstTick = if (firstMonthStart.isBefore(dateRange.start)) {
+        firstMonthStart.plusMonths(1)
+    } else {
+        firstMonthStart
+    }
+
+    return generateSequence(firstTick) { date -> date.plusMonths(1) }
+        .takeWhile { date -> !date.isAfter(dateRange.end) }
+        .toList()
 }
