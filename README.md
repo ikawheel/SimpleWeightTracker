@@ -1,6 +1,6 @@
 # Simple Weight Tracker
 
-[Japanese README](README.ja.md)
+[日本語 README はこちら](README.ja.md)
 
 Simple Weight Tracker is a simple weight tracking app that records your net weight by subtracting the weight of your clothes from the weight shown on the scale.
 
