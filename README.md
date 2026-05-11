@@ -1,8 +1,10 @@
 # Simple Weight Tracker
 
-Simple Weight Tracker は、体重計に表示された体重から服の重さを差し引き、実際の体重として記録・確認できるシンプルな体重管理アプリです。
+[Japanese README](README.ja.md)
 
-アカウント登録やクラウド同期はなく、記録データは端末内に保存されます。
+Simple Weight Tracker is a simple weight tracking app that records your net weight by subtracting the weight of your clothes from the weight shown on the scale.
+
+There is no account registration or cloud sync. Your records are stored locally on your device.
 
 
 
@@ -13,125 +15,125 @@ https://github.com/user-attachments/assets/4aeaeb73-0f24-4d22-8c33-c691ad33eaa4
 
 ## Features
 
-- 体重記録の追加
-- 体重記録の一覧表示
-- 記録の編集・削除
-- 日単位の体重グラフ表示
-- 移動平均線の表示
-- 体重増減傾向の表示
-- グラフ線の色変更
-- 移動平均の日数変更
-- CSV出力
-- 利用ライブラリのライセンス表示
+- Add weight records
+- View saved records in a list
+- Edit and delete records
+- View daily weight trends in a graph
+- Show a moving average line
+- Show the weight change trend
+- Change graph line colors
+- Change the moving average period
+- Export records as CSV
+- View licenses for used libraries
 
 ## App Overview
 
-このアプリでは、体重計に表示された値をそのまま記録するのではなく、服の重さを差し引いた値を「実際の体重」として保存します。
+This app does not simply save the value shown on the scale. Instead, it subtracts the weight of your clothes and stores the result as your net weight.
 
 ```text
-実際の体重 = 体重計の値 - 服の重さ
+Net weight = Scale weight - Clothes weight
 ```
 
-たとえば、体重計の値が `70.2kg`、服の重さが `0.8kg` の場合、実際の体重は `69.4kg` として記録されます。
+For example, if the scale shows `70.2 kg` and your clothes weigh `0.8 kg`, the app records your net weight as `69.4 kg`.
 
 ## Screens
 
 ### Record
 
-体重記録の追加・編集を行う画面です。
+This screen is used to add and edit weight records.
 
-入力項目は以下です。
+The input fields are:
 
-- 日付
-- 体重計の値
-- 服の重さ
+- Date
+- Scale weight
+- Clothes weight
 
-新規入力時は、日付に今日の日付が初期設定されます。
+When adding a new record, today's date is set by default.
 
-服の重さは直近の記録から引き継がれます。直近の記録がない場合は `0` になります。
+The clothes weight is carried over from the most recent record. If there is no previous record, it defaults to `0`.
 
-保存前には、計算後の実際の体重をプレビューできます。
+Before saving, you can preview the calculated net weight.
 
 ### List
 
-保存済みの体重記録をカード形式で表示します。
+Saved weight records are displayed as cards.
 
-各記録には以下の情報が表示されます。
+Each record shows:
 
-- 日付
-- 更新時刻
-- 実際の体重
+- Date
+- Updated time
+- Net weight
 
-各記録は編集・削除できます。
+Each record can be edited or deleted.
 
-削除時には確認ダイアログが表示されるため、誤操作による削除を防げます。
+A confirmation dialog is shown before deletion to help prevent accidental deletes.
 
 ### Graph
 
-日単位の体重推移をグラフで確認できます。
+You can view daily weight changes in a graph.
 
-グラフには以下が表示されます。
+The graph shows:
 
-- 実際の体重の折れ線グラフ
-- 移動平均線
-- 体重の増減傾向
+- A line graph of net weight
+- A moving average line
+- A weight change trend
 
-グラフ期間は以下から選択できます。
+The graph range can be selected from:
 
-- 1か月
-- 3か月
-- 6か月
-- 1年
-- 全期間
+- 1 month
+- 3 months
+- 6 months
+- 1 year
+- All
 
-1日に複数回記録がある場合、グラフではその日の最も低い実際の体重を使用します。
+If multiple records exist on the same day, the graph uses the lowest net weight for that day.
 
-移動平均線の日数は設定画面から変更できます。初期値は `7日` です。
+The moving average period can be changed from the settings screen. The default is `7 days`.
 
-体重の増減傾向は、記録データから線形回帰で計算し、1か月あたりの増減量として表示します。
+The weight change trend is calculated from record data using linear regression and displayed as the change per month.
 
 ### Settings
 
-設定画面では、表示や出力に関する設定を行えます。
+The settings screen lets you configure display and export options.
 
-主な項目は以下です。
+Main settings include:
 
-- 色設定
-- 移動平均線の日数設定
-- CSV出力
-- ライセンス表示
+- Color settings
+- Moving average period
+- CSV export
+- License view
 
-色設定では、以下の線の色を変更できます。
+In color settings, you can change the colors of:
 
-- 記録体重の線
-- 移動平均線
+- The net weight line
+- The moving average line
 
 ## CSV Export
 
-記録データはCSVファイルとして出力できます。
+Record data can be exported as a CSV file.
 
-CSV出力時は確認ダイアログが表示され、OKを押すとCSVファイルが作成されます。
+When exporting CSV, a confirmation dialog is shown. Pressing OK creates the CSV file.
 
-出力されるCSVの項目は以下です。
+The exported CSV contains the following columns:
 
 ```csv
 date,measuredWeight,clothesWeight,netWeight
 ```
 
-各項目の意味は以下です。
+Column meanings:
 
 | Column | Description |
 |---|---|
-| `date` | 記録日 |
-| `measuredWeight` | 体重計に表示された体重 |
-| `clothesWeight` | 服の重さ |
-| `netWeight` | 服の重さを差し引いた実際の体重 |
+| `date` | Record date |
+| `measuredWeight` | Weight shown on the scale |
+| `clothesWeight` | Clothes weight |
+| `netWeight` | Net weight after subtracting clothes weight |
 
 ## Privacy
 
-Simple Weight Tracker は、アカウント登録やクラウド同期を行いません。
+Simple Weight Tracker does not use account registration or cloud sync.
 
-記録データは端末内に保存されます。
+Record data is stored locally on your device.
 
 ## Tech Stack
 
@@ -142,10 +144,10 @@ Simple Weight Tracker は、アカウント登録やクラウド同期を行い�
 
 ## License
 
-このリポジトリのライセンスは、`LICENSE` ファイルを参照してください。
+See the `LICENSE` file for this repository's license.
 
 ## Notes
 
-このアプリは個人の体重管理を補助するためのアプリです。
+This app is intended to support personal weight tracking.
 
-医療目的のアプリではありません。
+It is not a medical app.
