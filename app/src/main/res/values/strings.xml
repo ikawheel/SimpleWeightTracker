@@ -44,6 +44,10 @@
     <string name="validation_moving_average_days">1以上の整数を入力してください</string>
     <string name="legend_record_weight">記録体重</string>
     <string name="legend_moving_average">%1$d日移動平均</string>
+    <string name="chart_selected_date">日付：%1$s</string>
+    <string name="chart_selected_record_weight">記録体重：%1$s</string>
+    <string name="chart_selected_moving_average">%1$d日移動平均：%2$s</string>
+    <string name="chart_selected_empty_value">-</string>
     <string name="validation_measured_weight_required">体重計の値を入力してください</string>
     <string name="validation_clothes_weight_required">服の重さを入力してください</string>
     <string name="validation_clothes_weight_range">服の重さは0.0kgから10.0kgの範囲で入力してください</string>

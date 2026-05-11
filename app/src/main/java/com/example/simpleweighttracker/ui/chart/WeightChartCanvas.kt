@@ -1,6 +1,8 @@
 package com.example.simpleweighttracker.ui.chart
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -12,10 +14,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import kotlin.math.abs
+import kotlin.math.roundToLong
 
 @Composable
 internal fun WeightChartCanvas(
@@ -24,16 +29,46 @@ internal fun WeightChartCanvas(
     chartScale: ChartScale,
     dateRange: ChartDateRange,
     xAxisTicks: List<ChartXAxisTick>,
+    selectedPoint: ChartPoint?,
     recordLineColor: Color,
-    movingAverageLineColor: Color
+    movingAverageLineColor: Color,
+    onPointSelected: (ChartPoint) -> Unit
 ) {
     val outlineColor = MaterialTheme.colorScheme.outlineVariant
     val density = LocalDensity.current
 
-    Canvas(modifier = modifier) {
+    Canvas(
+        modifier = modifier.pointerInput(points, dateRange) {
+            fun selectNearestPoint(tapOffset: Offset) {
+                findNearestPoint(
+                    points = points,
+                    dateRange = dateRange,
+                    tapX = tapOffset.x,
+                    dataWidth = size.width.toFloat() - ChartRightInset.toPx()
+                )?.let(onPointSelected)
+            }
+
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                selectNearestPoint(down.position)
+
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull { pointerChange ->
+                        pointerChange.id == down.id
+                    } ?: break
+                    if (!change.pressed) {
+                        break
+                    }
+                    selectNearestPoint(change.position)
+                }
+            }
+        }
+    ) {
         val primaryStrokeWidth = with(density) { 2.dp.toPx() }
         val secondaryStrokeWidth = with(density) { 2.4.dp.toPx() }
         val gridStroke = with(density) { 1.dp.toPx() }
+        val selectedGridStroke = with(density) { 1.5.dp.toPx() }
         val integerGridStroke = with(density) { 2.dp.toPx() }
         val dottedGridEffect = PathEffect.dashPathEffect(
             intervals = floatArrayOf(
@@ -137,6 +172,40 @@ internal fun WeightChartCanvas(
                 strokeWidth = secondaryStrokeWidth
             )
         }
+
+        selectedPoint?.let { point ->
+            val x = xPosition(point.date)
+            drawLine(
+                color = recordLineColor.copy(alpha = 0.85f),
+                start = Offset(x, top),
+                end = Offset(x, bottom),
+                strokeWidth = selectedGridStroke,
+                pathEffect = dottedGridEffect
+            )
+        }
+    }
+}
+
+private fun findNearestPoint(
+    points: List<ChartPoint>,
+    dateRange: ChartDateRange,
+    tapX: Float,
+    dataWidth: Float
+): ChartPoint? {
+    if (dataWidth <= 0f || points.isEmpty()) {
+        return null
+    }
+
+    val dateSpanDays = ChronoUnit.DAYS
+        .between(dateRange.start, dateRange.end)
+        .coerceAtLeast(1L)
+    val ratio = (tapX.coerceIn(0f, dataWidth) / dataWidth)
+        .coerceIn(0f, 1f)
+    val targetEpochDay = dateRange.start.toEpochDay() +
+        (dateSpanDays.toFloat() * ratio).roundToLong()
+
+    return points.minByOrNull { point ->
+        abs(point.date.toEpochDay() - targetEpochDay)
     }
 }
 
