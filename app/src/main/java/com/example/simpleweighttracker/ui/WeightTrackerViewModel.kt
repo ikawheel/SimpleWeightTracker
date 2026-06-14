@@ -1,17 +1,17 @@
-package com.example.simpleweighttracker.ui
+package com.ikeansoft.simpleweighttracker.ui
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.data.ChartColorSettingsRepository
-import com.example.simpleweighttracker.data.WeightRecordRepository
-import com.example.simpleweighttracker.data.WeightTrackerDatabase
-import com.example.simpleweighttracker.model.DailyWeightPoint
-import com.example.simpleweighttracker.model.GraphRange
-import com.example.simpleweighttracker.model.WeightRecord
-import com.example.simpleweighttracker.ui.chart.WeightChartAggregator
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.data.ChartColorSettingsRepository
+import com.ikeansoft.simpleweighttracker.data.WeightRecordRepository
+import com.ikeansoft.simpleweighttracker.data.WeightTrackerDatabase
+import com.ikeansoft.simpleweighttracker.model.DailyWeightPoint
+import com.ikeansoft.simpleweighttracker.model.GraphRange
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.ui.chart.WeightChartAggregator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 private const val DEFAULT_ZERO_INPUT = "0"
 private const val DEFAULT_NEW_MEASURED_WEIGHT_INPUT = DEFAULT_ZERO_INPUT
@@ -33,22 +34,34 @@ class WeightTrackerViewModel(
     private val selectedGraphRange = MutableStateFlow(GraphRange.All)
     private val formState = MutableStateFlow(RecordFormState())
     private val chartColorSettings = MutableStateFlow(chartColorSettingsRepository.load())
+    private val chartWindowEndDate = MutableStateFlow<LocalDate?>(null)
 
     val uiState: StateFlow<WeightUiState> = combine(
         records,
         selectedGraphRange,
         formState,
-        chartColorSettings
-    ) { currentRecords, graphRange, currentForm, currentChartColorSettings ->
+        chartColorSettings,
+        chartWindowEndDate
+    ) { currentRecords, graphRange, currentForm, currentChartColorSettings, requestedChartWindowEndDate ->
         val allDailyChartData = WeightChartAggregator.buildDaily(
             records = currentRecords,
             movingAverageDays = currentChartColorSettings.movingAverageDays
+        )
+        val normalizedChartWindowEndDate = coerceChartWindowEndDate(
+            points = allDailyChartData,
+            graphRange = graphRange,
+            requestedEndDate = requestedChartWindowEndDate
         )
         WeightUiState(
             records = currentRecords,
             latestClothesWeight = currentRecords.firstOrNull()?.clothesWeight ?: 0.0,
             selectedGraphRange = graphRange,
-            dailyChartData = filterDailyChartData(allDailyChartData, graphRange),
+            chartWindowEndDate = normalizedChartWindowEndDate,
+            dailyChartData = filterDailyChartData(
+                points = allDailyChartData,
+                graphRange = graphRange,
+                windowEndDate = normalizedChartWindowEndDate
+            ),
             chartColorSettings = currentChartColorSettings,
             formState = currentForm
         )
@@ -196,6 +209,30 @@ class WeightTrackerViewModel(
 
     fun selectGraphRange(graphRange: GraphRange) {
         selectedGraphRange.value = graphRange
+        chartWindowEndDate.value = null
+    }
+
+    fun panChartDateRange(dayOffset: Long) {
+        if (dayOffset == 0L || selectedGraphRange.value == GraphRange.All) {
+            return
+        }
+
+        val graphRange = selectedGraphRange.value
+        val allDailyChartData = WeightChartAggregator.buildDaily(
+            records = records.value,
+            movingAverageDays = chartColorSettings.value.movingAverageDays
+        )
+        val currentEndDate = coerceChartWindowEndDate(
+            points = allDailyChartData,
+            graphRange = graphRange,
+            requestedEndDate = chartWindowEndDate.value
+        ) ?: return
+
+        chartWindowEndDate.value = coerceChartWindowEndDate(
+            points = allDailyChartData,
+            graphRange = graphRange,
+            requestedEndDate = currentEndDate.plusDays(dayOffset)
+        )
     }
 
     fun updateRecordLineColor(colorArgb: Int?) {
@@ -275,6 +312,7 @@ class WeightTrackerViewModel(
                 repository.insert(record)
             }
 
+            chartWindowEndDate.value = null
             resetForm(defaultClothesWeight = clothesWeight)
         }
 
@@ -296,21 +334,61 @@ class WeightTrackerViewModel(
 
     private fun filterDailyChartData(
         points: List<DailyWeightPoint>,
-        graphRange: GraphRange
+        graphRange: GraphRange,
+        windowEndDate: LocalDate?
     ): List<DailyWeightPoint> {
-        val latestDate = points.lastOrNull()?.date ?: return emptyList()
-        val startDate = when (graphRange) {
-            GraphRange.OneMonth -> latestDate.minusMonths(1)
-            GraphRange.ThreeMonths -> latestDate.minusMonths(3)
-            GraphRange.SixMonths -> latestDate.minusMonths(6)
-            GraphRange.OneYear -> latestDate.minusYears(1)
-            GraphRange.All -> null
+        if (graphRange == GraphRange.All) {
+            return points
         }
 
-        return if (startDate == null) {
-            points
-        } else {
-            points.filter { point -> !point.date.isBefore(startDate) }
+        val endDate = windowEndDate ?: return emptyList()
+        val startDate = calculateChartRangeStart(endDate = endDate, graphRange = graphRange)
+        return points.filter { point ->
+            !point.date.isBefore(startDate) && !point.date.isAfter(endDate)
+        }
+    }
+
+    private fun coerceChartWindowEndDate(
+        points: List<DailyWeightPoint>,
+        graphRange: GraphRange,
+        requestedEndDate: LocalDate?
+    ): LocalDate? {
+        if (graphRange == GraphRange.All) {
+            return null
+        }
+
+        val earliestDate = points.firstOrNull()?.date ?: return null
+        val latestDate = points.last().date
+        var endDate = when {
+            requestedEndDate == null -> latestDate
+            requestedEndDate.isAfter(latestDate) -> latestDate
+            requestedEndDate.isBefore(earliestDate) -> earliestDate
+            else -> requestedEndDate
+        }
+
+        val startDate = calculateChartRangeStart(endDate = endDate, graphRange = graphRange)
+        if (startDate.isBefore(earliestDate)) {
+            val adjustedEndDate = endDate.plusDays(ChronoUnit.DAYS.between(startDate, earliestDate))
+            endDate = if (adjustedEndDate.isAfter(latestDate)) {
+                latestDate
+            } else {
+                adjustedEndDate
+            }
+        }
+
+        return endDate
+    }
+
+    private fun calculateChartRangeStart(
+        endDate: LocalDate,
+        graphRange: GraphRange
+    ): LocalDate {
+        return when (graphRange) {
+            GraphRange.OneMonth -> endDate.minusMonths(1)
+            GraphRange.ThreeMonths -> endDate.minusMonths(3)
+            GraphRange.SixMonths -> endDate.minusMonths(6)
+            GraphRange.OneYear -> endDate.minusYears(1)
+            GraphRange.All -> endDate
         }
     }
 

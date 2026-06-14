@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.data
+package com.ikeansoft.simpleweighttracker.data
 
 import androidx.room.Dao
 import androidx.room.Delete

@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.settings
+package com.ikeansoft.simpleweighttracker.ui.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,10 +13,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.export.WeightRecordCsvExporter
-import com.example.simpleweighttracker.export.WeightRecordCsvHeaders
-import com.example.simpleweighttracker.ui.WeightUiState
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.export.WeightRecordCsvExporter
+import com.ikeansoft.simpleweighttracker.export.WeightRecordCsvHeaders
+import com.ikeansoft.simpleweighttracker.ui.WeightUiState
 
 @Composable
 fun SettingsScreen(

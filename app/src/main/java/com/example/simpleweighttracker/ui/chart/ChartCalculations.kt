@@ -1,9 +1,9 @@
-package com.example.simpleweighttracker.ui.chart
+package com.ikeansoft.simpleweighttracker.ui.chart
 
-import com.example.simpleweighttracker.model.DailyWeightPoint
-import com.example.simpleweighttracker.model.GraphRange
-import com.example.simpleweighttracker.model.WeightRecord
-import com.example.simpleweighttracker.ui.WeightTrackerFormatters
+import com.ikeansoft.simpleweighttracker.model.DailyWeightPoint
+import com.ikeansoft.simpleweighttracker.model.GraphRange
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.ui.WeightTrackerFormatters
 import java.time.LocalDate
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -20,10 +20,12 @@ internal fun buildChartPoints(points: List<DailyWeightPoint>): List<ChartPoint> 
 
 internal fun buildChartDateRange(
     records: List<WeightRecord>,
-    graphRange: GraphRange
+    graphRange: GraphRange,
+    windowEndDate: LocalDate? = null
 ): ChartDateRange {
     val fallbackEnd = LocalDate.now()
-    val end = records.maxByOrNull { record -> record.date.toEpochDay() }?.date ?: fallbackEnd
+    val latestRecordDate = records.maxByOrNull { record -> record.date.toEpochDay() }?.date
+    val end = windowEndDate ?: latestRecordDate ?: fallbackEnd
     val start = when (graphRange) {
         GraphRange.OneMonth -> end.minusMonths(1)
         GraphRange.ThreeMonths -> end.minusMonths(3)

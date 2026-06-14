@@ -1,9 +1,9 @@
-package com.example.simpleweighttracker.ui
+package com.ikeansoft.simpleweighttracker.ui
 
-import com.example.simpleweighttracker.model.DailyWeightPoint
-import com.example.simpleweighttracker.model.ChartColorSettings
-import com.example.simpleweighttracker.model.GraphRange
-import com.example.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.model.DailyWeightPoint
+import com.ikeansoft.simpleweighttracker.model.ChartColorSettings
+import com.ikeansoft.simpleweighttracker.model.GraphRange
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
 import java.time.LocalDate
 
 data class RecordFormState(
@@ -24,6 +24,7 @@ data class WeightUiState(
     val records: List<WeightRecord> = emptyList(),
     val latestClothesWeight: Double = 0.0,
     val selectedGraphRange: GraphRange = GraphRange.All,
+    val chartWindowEndDate: LocalDate? = null,
     val dailyChartData: List<DailyWeightPoint> = emptyList(),
     val chartColorSettings: ChartColorSettings = ChartColorSettings(),
     val formState: RecordFormState = RecordFormState()

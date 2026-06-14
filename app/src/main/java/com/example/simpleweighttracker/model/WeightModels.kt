@@ -1,7 +1,7 @@
-package com.example.simpleweighttracker.model
+package com.ikeansoft.simpleweighttracker.model
 
 import androidx.annotation.StringRes
-import com.example.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.R
 import java.time.LocalDate
 
 data class WeightRecord(

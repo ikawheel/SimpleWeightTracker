@@ -1,9 +1,9 @@
-package com.example.simpleweighttracker.data
+package com.ikeansoft.simpleweighttracker.data
 
 import android.content.Context
-import com.example.simpleweighttracker.model.ChartColorSettings
-import com.example.simpleweighttracker.model.DefaultMovingAverageDays
-import com.example.simpleweighttracker.model.DefaultMovingAverageLineColorArgb
+import com.ikeansoft.simpleweighttracker.model.ChartColorSettings
+import com.ikeansoft.simpleweighttracker.model.DefaultMovingAverageDays
+import com.ikeansoft.simpleweighttracker.model.DefaultMovingAverageLineColorArgb
 
 class ChartColorSettingsRepository(
     context: Context

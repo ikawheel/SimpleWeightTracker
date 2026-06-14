@@ -1,11 +1,11 @@
-package com.example.simpleweighttracker.export
+package com.ikeansoft.simpleweighttracker.export
 
 import android.content.ContentValues
 import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import com.example.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
 import java.io.File
 import java.io.OutputStream
 import java.io.OutputStreamWriter

@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.chart
+package com.ikeansoft.simpleweighttracker.ui.chart
 
 import androidx.compose.ui.unit.dp
 

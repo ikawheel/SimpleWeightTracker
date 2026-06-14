@@ -1,6 +1,7 @@
-package com.example.simpleweighttracker.ui.chart
+package com.ikeansoft.simpleweighttracker.ui.chart
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,15 +23,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.ui.WeightTrackerFormatters
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.ui.WeightTrackerFormatters
 import java.time.temporal.ChronoUnit
 
 @Composable
@@ -42,7 +46,8 @@ internal fun WeightChart(
     recordLineColor: Color,
     movingAverageLineColor: Color,
     movingAverageDays: Int,
-    trendLabel: String?
+    trendLabel: String?,
+    onDateRangePan: (Long) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -62,6 +67,7 @@ internal fun WeightChart(
             ChartXAxis(
                 dateRange = dateRange,
                 ticks = xAxisTicks,
+                onDateRangePan = onDateRangePan,
                 modifier = Modifier.padding(start = 44.dp)
             )
             return@Column
@@ -135,6 +141,7 @@ internal fun WeightChart(
         ChartXAxis(
             dateRange = dateRange,
             ticks = xAxisTicks,
+            onDateRangePan = onDateRangePan,
             modifier = Modifier.padding(start = 44.dp)
         )
 
@@ -225,6 +232,7 @@ private fun ChartSelectionInfo(
 private fun ChartXAxis(
     dateRange: ChartDateRange,
     ticks: List<ChartXAxisTick>,
+    onDateRangePan: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(
@@ -234,19 +242,57 @@ private fun ChartXAxis(
     ) {
         val labelWidth = 48.dp
         val dataWidth = (maxWidth - ChartRightInset).coerceAtLeast(0.dp)
+        val density = LocalDensity.current
+        val updatedOnDateRangePan by rememberUpdatedState(onDateRangePan)
+        val dateSpanDays = ChronoUnit.DAYS
+            .between(dateRange.start, dateRange.end)
+            .coerceAtLeast(1L)
+        val dataWidthPx = with(density) { dataWidth.toPx() }
+        val pixelsPerDay = dataWidthPx / dateSpanDays.toFloat()
+        var accumulatedDragPx by remember(dateSpanDays, dataWidthPx) {
+            mutableStateOf(0f)
+        }
 
-        ticks.forEach { tick ->
-            val ratio = calculateDatePositionRatio(dateRange = dateRange, date = tick.date)
-            val offset = dataWidth * ratio - labelWidth / 2f
-            Text(
-                text = tick.label,
-                modifier = Modifier
-                    .width(labelWidth)
-                    .offset(x = offset),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(dateSpanDays, dataWidthPx) {
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            accumulatedDragPx = 0f
+                        },
+                        onDragEnd = {
+                            accumulatedDragPx = 0f
+                        },
+                        onDragCancel = {
+                            accumulatedDragPx = 0f
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            if (pixelsPerDay > 0f) {
+                                accumulatedDragPx += dragAmount
+                                val dayOffset = (accumulatedDragPx / pixelsPerDay).toLong()
+                                if (dayOffset != 0L) {
+                                    updatedOnDateRangePan(-dayOffset)
+                                    accumulatedDragPx -= dayOffset * pixelsPerDay
+                                }
+                            }
+                        }
+                    )
+                }
+        ) {
+            ticks.forEach { tick ->
+                val ratio = calculateDatePositionRatio(dateRange = dateRange, date = tick.date)
+                val offset = dataWidth * ratio - labelWidth / 2f
+                Text(
+                    text = tick.label,
+                    modifier = Modifier
+                        .width(labelWidth)
+                        .offset(x = offset),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }

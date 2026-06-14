@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.data
+package com.ikeansoft.simpleweighttracker.data
 
 import androidx.room.TypeConverter
 import java.time.LocalDate

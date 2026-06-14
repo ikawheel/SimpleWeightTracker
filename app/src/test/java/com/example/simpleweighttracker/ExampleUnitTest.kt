@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker
+package com.ikeansoft.simpleweighttracker
 
 import org.junit.Test
 
