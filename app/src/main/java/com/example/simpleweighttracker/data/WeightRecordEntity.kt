@@ -1,8 +1,8 @@
-package com.example.simpleweighttracker.data
+package com.ikeansoft.simpleweighttracker.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
 import java.time.LocalDate
 
 @Entity(tableName = "weight_records")

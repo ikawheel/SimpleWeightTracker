@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.chart
+package com.ikeansoft.simpleweighttracker.ui.chart
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,25 +24,31 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.model.GraphRange
-import com.example.simpleweighttracker.ui.WeightTrackerFormatters
-import com.example.simpleweighttracker.ui.WeightUiState
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.model.GraphRange
+import com.ikeansoft.simpleweighttracker.ui.WeightTrackerFormatters
+import com.ikeansoft.simpleweighttracker.ui.WeightUiState
 
 @Composable
 fun ChartScreen(
     uiState: WeightUiState,
     contentPadding: PaddingValues,
-    onGraphRangeSelected: (GraphRange) -> Unit
+    onGraphRangeSelected: (GraphRange) -> Unit,
+    onChartDateRangePan: (Long) -> Unit
 ) {
     val recordLineColor = Color(
         uiState.chartColorSettings.recordLineColorArgb ?: DefaultRecordLineColorArgb
     )
     val movingAverageLineColor = Color(uiState.chartColorSettings.movingAverageLineColorArgb)
-    val chartDateRange = remember(uiState.records, uiState.selectedGraphRange) {
+    val chartDateRange = remember(
+        uiState.records,
+        uiState.selectedGraphRange,
+        uiState.chartWindowEndDate
+    ) {
         buildChartDateRange(
             records = uiState.records,
-            graphRange = uiState.selectedGraphRange
+            graphRange = uiState.selectedGraphRange,
+            windowEndDate = uiState.chartWindowEndDate
         )
     }
     val trendPerMonth = remember(uiState.dailyChartData) {
@@ -80,7 +86,12 @@ fun ChartScreen(
             recordLineColor = recordLineColor,
             movingAverageLineColor = movingAverageLineColor,
             movingAverageDays = uiState.chartColorSettings.movingAverageDays,
-            trendLabel = trendLabel
+            trendLabel = trendLabel,
+            onDateRangePan = if (uiState.selectedGraphRange == GraphRange.All) {
+                { _ -> }
+            } else {
+                onChartDateRangePan
+            }
         )
 
         Row(

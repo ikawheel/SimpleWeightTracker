@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.chart
+package com.ikeansoft.simpleweighttracker.ui.chart
 
 import java.time.LocalDate
 

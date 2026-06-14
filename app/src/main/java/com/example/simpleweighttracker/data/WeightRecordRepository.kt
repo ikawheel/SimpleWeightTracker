@@ -1,6 +1,6 @@
-package com.example.simpleweighttracker.data
+package com.ikeansoft.simpleweighttracker.data
 
-import com.example.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 

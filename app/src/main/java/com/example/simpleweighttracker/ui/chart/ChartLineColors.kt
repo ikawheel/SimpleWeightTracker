@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.chart
+package com.ikeansoft.simpleweighttracker.ui.chart
 
 internal val DefaultRecordLineColorArgb = 0xFF1976D2.toInt()
 

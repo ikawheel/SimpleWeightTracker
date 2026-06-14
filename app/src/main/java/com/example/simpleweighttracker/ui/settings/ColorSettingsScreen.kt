@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.settings
+package com.ikeansoft.simpleweighttracker.ui.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -27,11 +27,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.ui.WeightUiState
-import com.example.simpleweighttracker.ui.chart.ChartLineColorOption
-import com.example.simpleweighttracker.ui.chart.ChartLineColorPalette
-import com.example.simpleweighttracker.ui.chart.DefaultRecordLineColorArgb
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.ui.WeightUiState
+import com.ikeansoft.simpleweighttracker.ui.chart.ChartLineColorOption
+import com.ikeansoft.simpleweighttracker.ui.chart.ChartLineColorPalette
+import com.ikeansoft.simpleweighttracker.ui.chart.DefaultRecordLineColorArgb
 
 @Composable
 internal fun ColorSettingsScreen(

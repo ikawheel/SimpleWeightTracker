@@ -1,7 +1,7 @@
-package com.example.simpleweighttracker.ui.settings
+package com.ikeansoft.simpleweighttracker.ui.settings
 
 import androidx.annotation.StringRes
-import com.example.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.R
 
 internal data class MovingAverageDaysInputState(
     val value: Int?,

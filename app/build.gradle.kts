@@ -11,7 +11,7 @@ val versionPatch = 0
 val versionBuild = 1
 
 android {
-    namespace = "com.example.simpleweighttracker"
+    namespace = "com.ikeansoft.simpleweighttracker"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.simpleweighttracker"
+        applicationId = "com.ikeansoft.simpleweighttracker"
         minSdk = 24
         targetSdk = 36
         versionCode = versionMajor * 1_000_000 +

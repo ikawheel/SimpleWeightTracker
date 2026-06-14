@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.settings
+package com.ikeansoft.simpleweighttracker.ui.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -30,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.ui.WeightUiState
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.ui.WeightUiState
 
 @Composable
 internal fun MovingAverageSettingsScreen(

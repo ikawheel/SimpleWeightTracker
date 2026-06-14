@@ -1,7 +1,7 @@
-package com.example.simpleweighttracker
+package com.ikeansoft.simpleweighttracker
 
-import com.example.simpleweighttracker.model.WeightRecord
-import com.example.simpleweighttracker.ui.WeightChartAggregator
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.ui.WeightChartAggregator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

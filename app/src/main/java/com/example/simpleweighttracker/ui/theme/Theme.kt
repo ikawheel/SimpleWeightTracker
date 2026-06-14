@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.theme
+package com.ikeansoft.simpleweighttracker.ui.theme
 
 import android.app.Activity
 import android.os.Build

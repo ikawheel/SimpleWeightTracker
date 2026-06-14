@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui
+package com.ikeansoft.simpleweighttracker.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -34,11 +34,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.ui.chart.ChartScreen
-import com.example.simpleweighttracker.ui.editor.RecordEditorDialog
-import com.example.simpleweighttracker.ui.records.RecordsScreen
-import com.example.simpleweighttracker.ui.settings.SettingsScreen
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.ui.chart.ChartScreen
+import com.ikeansoft.simpleweighttracker.ui.editor.RecordEditorDialog
+import com.ikeansoft.simpleweighttracker.ui.records.RecordsScreen
+import com.ikeansoft.simpleweighttracker.ui.settings.SettingsScreen
 
 @Composable
 fun WeightTrackerApp(
@@ -173,7 +173,8 @@ fun WeightTrackerApp(
                     AppTab.Chart -> ChartScreen(
                         uiState = uiState,
                         contentPadding = innerPadding,
-                        onGraphRangeSelected = viewModel::selectGraphRange
+                        onGraphRangeSelected = viewModel::selectGraphRange,
+                        onChartDateRangePan = viewModel::panChartDateRange
                     )
 
                     AppTab.Settings -> SettingsScreen(

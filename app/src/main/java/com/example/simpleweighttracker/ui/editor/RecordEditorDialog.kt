@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.editor
+package com.ikeansoft.simpleweighttracker.ui.editor
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -36,9 +36,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.ui.WeightTrackerFormatters
-import com.example.simpleweighttracker.ui.WeightUiState
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.ui.WeightTrackerFormatters
+import com.ikeansoft.simpleweighttracker.ui.WeightUiState
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui
+package com.ikeansoft.simpleweighttracker.ui
 
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols

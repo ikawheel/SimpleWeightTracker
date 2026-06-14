@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.ui.records
+package com.ikeansoft.simpleweighttracker.ui.records
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,9 +33,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.simpleweighttracker.R
-import com.example.simpleweighttracker.model.WeightRecord
-import com.example.simpleweighttracker.ui.WeightTrackerFormatters
+import com.ikeansoft.simpleweighttracker.R
+import com.ikeansoft.simpleweighttracker.model.WeightRecord
+import com.ikeansoft.simpleweighttracker.ui.WeightTrackerFormatters
 
 @Composable
 fun RecordsScreen(

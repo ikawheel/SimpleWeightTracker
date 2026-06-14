@@ -1,4 +1,4 @@
-package com.example.simpleweighttracker.model
+package com.ikeansoft.simpleweighttracker.model
 
 val DefaultMovingAverageLineColorArgb: Int = 0xFFFFA726.toInt()
 const val DefaultMovingAverageDays = 7
